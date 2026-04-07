@@ -4,7 +4,7 @@ title: "IEEE-CIS Fraud Detection: Sistema de Detección de Fraude"
 date: 2026-04-07
 tags: [python, pandas, scikit-learn, LightGBM, XGBoost, feature engineering, streamlit]
 github_repo: https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection
-summary: "Sistema de machine learning para detectar transacciones fraudulentas en tiempo real con AUC-ROC de 0.924."
+summary: "Modelo: Ensemble LightGBM + XGBoost con label/target encoding. Dataset: Transacciones IEEE-CIS (~590k). Objetivo: Detección de fraude en tiempo real optimizando AUC-ROC."
 ---
 
 # 🔒 IEEE-CIS Fraud Detection: Sistema de Detección de Fraude
@@ -199,6 +199,7 @@ El proyecto incluye un dashboard Streamlit con:
 
 ## 🔗 Enlaces
 
-- **Repositorio**: [GitHub]({{ page.github_repo }})
-- **Dashboard**: `streamlit run streamlit_app.py`
-- **Tests**: `pytest -v`
+- **Repositorio**: [GitHub](https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection)
+- **Código fuente**: [Ver en GitHub](https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection/tree/main/src)
+- **Dashboard**: [Ver streamlit_app.py](https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection/blob/main/streamlit_app.py)
+- **Tests**: [Ver tests](https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection/tree/main/tests)

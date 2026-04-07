@@ -1,6 +1,6 @@
 ---
 layout: collection
-title: "Projects"
+title: "Proyectos ML/DL"
 permalink: /projects/
 collection: projects
 entries_layout: list
