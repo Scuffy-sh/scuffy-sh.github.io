@@ -4,6 +4,7 @@ title: "NCAA March Madness 2026: Predicción Probabilística del Torneo"
 date: 2026-03-24
 tags: [python, pandas, scikit-learn, LightGBM, feature engineering]
 github_repo: https://github.com/Scuffy-sh/Featured_Prediction_Competition
+excerpt: "Sistema de machine learning para predecir resultados del torneo NCAA March Madness 2026 con probabilidades calibradas y foco en minimizar Brier Score."
 ---
 
 # 🏀 NCAA March Madness 2026: Predicción Probabilística del Torneo
