@@ -1,0 +1,8 @@
+scuffy:
+  name: "Scuffy"
+  bio: "Machine Learning & Cybersecurity"
+  avatar: /assets/images/avatar.png
+  links:
+    - label: GitHub
+      icon: fab fa-github
+      url: https://github.com/scuffy-sh
