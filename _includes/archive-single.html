@@ -27,7 +27,6 @@
         <a class="u-url" href="{{ post.url | relative_url }}" rel="permalink">{{ title }}</a>
       {% endif %}
     </h2>
-    {% include page__meta.html locale=locale type=include.type %}
     {% if summary %}<p class="archive__item-excerpt p-summary" itemprop="description">{{ summary | markdownify | strip_html | truncate: 160 }}</p>{% endif %}
   </article>
 </div>
