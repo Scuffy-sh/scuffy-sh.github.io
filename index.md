@@ -18,7 +18,7 @@ En el apartado de Proyectos, se incluyen implementaciones de modelos de Machine 
 
 ---
 
-### 🐛 Hacking
+### 🐛 Hacking Ético
 
 [![Icono Hacking](/images/icono_hacking.png){:height="80px"}](/writeups/)
 
