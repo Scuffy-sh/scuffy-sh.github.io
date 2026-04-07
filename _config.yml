@@ -2,6 +2,11 @@ title: Portafolio
 description: Portfolio ML + Hacking
 logo: /images/icono_hacking.png
 favicon: /images/icono_hacking.png
+author: scuffy
+
+sass:
+  sass_dir: _sass
+  style: compressed
 
 remote_theme: mmistakes/minimal-mistakes@4.24.0
 
