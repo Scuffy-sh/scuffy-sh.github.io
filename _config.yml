@@ -1,6 +1,7 @@
-title: Portafolio - Álex
+title: Portafolio
 description: Portfolio ML + Hacking
 logo: /images/icono_hacking.png
+favicon: /images/icono_hacking.png
 
 remote_theme: mmistakes/minimal-mistakes@4.24.0
 
