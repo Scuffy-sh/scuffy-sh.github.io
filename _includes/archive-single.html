@@ -13,6 +13,16 @@
 
 {% assign summary = post.summary | default: post.excerpt %}
 
+{% capture meta %}
+  {% if post.difficulty %}<span><strong>Difficulty:</strong> {{ post.difficulty }}</span>{% endif %}
+  {% if post.operating_system %}
+    {% if post.difficulty %} <span aria-hidden="true">·</span> {% endif %}<span><strong>OS:</strong> {{ post.operating_system }}</span>
+  {% endif %}
+  {% if post.service_hint %}
+    {% if post.difficulty or post.operating_system %} <span aria-hidden="true">·</span> {% endif %}<span><strong>Service:</strong> {{ post.service_hint }}</span>
+  {% endif %}
+{% endcapture %}
+
 <div class="{{ include.type | default: 'list' }}__item">
   <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork"{% if post.locale %} lang="{{ post.locale }}"{% endif %}>
     {% if include.type == "grid" and teaser %}
@@ -27,6 +37,8 @@
         <a class="u-url" href="{{ post.url | relative_url }}" rel="permalink">{{ title }}</a>
       {% endif %}
     </h2>
+    {% assign meta_text = meta | strip %}
+    {% if meta_text != blank %}<p class="archive__item-meta"><small>{{ meta_text }}</small></p>{% endif %}
     {% if summary %}<p class="archive__item-excerpt p-summary" itemprop="description">{{ summary | markdownify | strip_html | truncate: 160 }}</p>{% endif %}
   </article>
 </div>
