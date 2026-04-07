@@ -1,7 +1,7 @@
 ---
 layout: collection
 title: "Projects"
-permalink: /_projects/
+permalink: /projects/
 collection: projects
 ---
 
