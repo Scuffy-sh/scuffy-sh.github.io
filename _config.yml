@@ -1,8 +1,8 @@
 title: Portafolio
 description: Portfolio ML + Hacking
+subtitle: Álex Pasalamar Serrano
 logo: /images/icono_hacking.png
 favicon: /images/icono_hacking.png
-author: scuffy
 
 sass:
   sass_dir: _sass
