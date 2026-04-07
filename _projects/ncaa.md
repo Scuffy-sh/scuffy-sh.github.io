@@ -1,4 +1,198 @@
+---
 layout: single
 title: "NCAA March Madness 2026: Predicción Probabilística del Torneo"
 date: 24/03/2026
 tags: [python, pandas, scikit-learn, LightGBM, feature engineering]
+github_repo: https://github.com/Scuffy-sh/Featured_Prediction_Competition
+---
+
+# 🏀 NCAA March Madness 2026: Predicción Probabilística del Torneo
+
+## 📋 Resumen Ejecutivo
+
+Sistema de machine learning para predecir resultados del torneo NCAA March Madness 2026. El modelo genera 132,133 predicciones probabilísticas para todos los enfrentamientos posibles entre equipos masculinos y femeninos, minimizando el Brier Score.
+
+**Stack tecnológico**: Python, pandas, scikit-learn, LightGBM, Optuna  
+**Duración del proyecto**: 1 día  
+**Repositorio**: [GitHub]({{ page.github_repo }})
+
+---
+
+## 🎯 Problema de Negocio
+
+La predicción de resultados deportivos presenta alta incertidumbre debido a múltiples factores: rendimiento histórico, estadísticas avanzadas, momentum reciente y contexto del partido. El objetivo es generar probabilidades fiables que permitan minimizar el error de predicción medido por Brier Score.
+
+**Métrica principal**: Brier Score (menor es mejor)  
+**Target**: Probabilidad de victoria para cada par de equipos
+
+---
+
+## 📊 Dataset
+
+| Origen | Descripción | Registros |
+|--------|-------------|-----------|
+| Kaggle | Competición NCAA March Madness 2026 | - |
+| MRegularSeasonCompactResults | Partidos temporada regular masculino | 134,088 |
+| WRegularSeasonCompactResults | Partidos temporada regular femenino | 115,116 |
+| MMasseyOrdinals | Rankings externos | ~6M |
+| MNCAATourneySeeds | Semillas del torneo | 1,984 |
+| M/WRegularSeasonDetailedResults | Estadísticas avanzadas | 85,000+ |
+
+**Rango temporal**: 1985-2026  
+**Features utilizadas**: 78 (ELO, Massey, stats, momentum, seeds, advanced)
+
+---
+
+## ⚙️ Pipeline de Machine Learning
+
+### 1. Feature Engineering
+
+| Feature | Descripción | Tipo |
+|---------|-------------|------|
+| Elo Ratings | Rating histórico con ajuste por margen | Numérico |
+| Massey Ordinals | Rankings externos (mean, median, latest) | Numérico |
+| Team Stats | Win rate, puntos, margen | Numérico |
+| Momentum | Victoria en últimos 10 partidos | Numérico |
+| Seeds | Semillas del torneo (1-16) | Numérico |
+| Advanced Stats | FG%, rebotes, AST/TO, blk/PF | Numérico |
+
+### 2. Modelado
+
+**Modelo seleccionado**: LightGBM
+
+```
+Parámetros optimizados:
+- n_estimators: 278
+- learning_rate: 0.058
+- max_depth: 4
+- num_leaves: 56
+- min_child_samples: 44
+- subsample: 0.65
+- colsample_bytree: 0.95
+```
+
+**Estrategia de validación**: Walk-forward validation (entrenamiento en seasons 2010-2024, validación en 2025)
+
+**Calibración**: Isotonic regression para ajustar probabilidades
+
+### 3. Arquitectura
+
+```
+Input (matchup features)
+    ↓
+Difference features (team1 - team2)
+    ↓
+LightGBM Classifier
+    ↓
+Isotonic Calibration
+    ↓
+Probability Output [0.01, 0.99]
+```
+
+---
+
+## 📈 Resultados
+
+### Métricas de Validación
+
+| Métrica | Masculino (M) | Femenino (W) |
+|---------|---------------|--------------|
+| Log Loss | 0.4743 | 0.3109 |
+| Brier Score | ~0.203 | ~0.203 |
+| ROC-AUC | TBD | TBD |
+
+### Predicciones
+
+| Métrica | Valor |
+|---------|-------|
+| Total predictions | 132,133 |
+| Masculino | 66,430 |
+| Femenino | 65,341 |
+| Fallback (0.5) | 362 |
+| Predicción media | 0.506 |
+| Rango | [0.01, 0.99] |
+
+**Interpretación del Brier Score**: Un valor de ~0.20 indica que las predicciones están razonablemente calibradas. Para referencia, un modelo que predice 0.5 para todos tendría Brier Score de 0.25.
+
+---
+
+## 🔒 Validación de Data Leakage
+
+Se verificó exhaustivamente que no exista data leakage:
+
+- ✅ Features usan solo datos con `DayNum <= 136` (pre-torneo)
+- ✅ No se usa información de partidos del tournament para features
+- ✅ Seeds son información conocida antes del tournament
+- ✅ Massey rankings hasta `RankingDayNum <= 133`
+
+---
+
+## 💡 Limitaciones
+
+1. **Sin información contextual**: El modelo no considera lesiones, viajes, descansos
+2. **Features limitadas**: No se incluyeron head-to-head history, factores psicológicos
+3. **Datos limitados**: Solo temporada regular hasta día 136
+4. **Un solo modelo**: No se implementó ensemble de múltiples modelos
+
+---
+
+## 🚀 Mejoras Futuras
+
+1. **Feature engineering adicional**:
+   - Head-to-head histórico entre equipos
+   - Forma reciente (últimos 5-10 partidos)
+   - Estadísticas por conferencia
+
+2. **Modelos ensemble**:
+   - Combinar LightGBM + XGBoost + Logistic Regression
+   - Meta-learner para optimización de pesos
+
+3. **Cross-validation más robusta**:
+   - Leave-seasons-out validation
+
+4. **Explicabilidad**:
+   - SHAP values para interpretar predicciones
+
+---
+
+## 🛠️ Tech Stack
+
+- **Lenguaje**: Python 3.10+
+- **Data**: pandas, numpy
+- **ML**: scikit-learn, LightGBM, Optuna
+- **Visualización**: matplotlib, seaborn, Jupyter
+- **Testing**: pytest
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+Featured_Prediction_Competition/
+├── src/
+│   ├── pipeline.py              # Pipeline principal
+│   ├── data/loaders.py         # Carga de datos
+│   ├── features/               # Feature engineering
+│   │   ├── elo.py
+│   │   ├── massey.py
+│   │   ├── team_stats.py
+│   │   ├── momentum.py
+│   │   ├── seeds.py
+│   │   └── advanced_stats.py
+│   └── models/ensemble.py      # Modelo ensemble
+├── tests/                      # Tests unitarios
+├── outputs/
+│   ├── ncaa_prediction_analysis.ipynb  # Análisis visual
+│   └── submission.csv            # Archivo final
+├── README.md
+└── CHANGELOG.md
+```
+
+---
+
+## 🔗 Enlaces
+
+- **Repositorio**: [GitHub]({{ page.github_repo }})
+- **Código fuente**: [Ver en GitHub]({{ page.github_repo }}/tree/main/src)
+- **Notebook**: [Ver análisis]({{ page.github_repo }}/blob/main/outputs/ncaa_prediction_analysis.ipynb)
+- **Tests**: [Ver tests]({{ page.github_repo }}/tree/main/tests)
