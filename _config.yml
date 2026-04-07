@@ -6,7 +6,7 @@ remote_theme: mmistakes/minimal-mistakes@4.24.0
 plugins:
   - jekyll-include-cache
 
-navbar:
-  nav:
-    - title: Projects
-      url: /projects/
+collections:
+  projects:
+    output: true
+    permalink: /projects/:path/
