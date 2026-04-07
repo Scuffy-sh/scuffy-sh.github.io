@@ -4,7 +4,7 @@ title: "IEEE-CIS Fraud Detection: Sistema de Detección de Fraude"
 date: 2026-04-07
 tags: [python, pandas, scikit-learn, LightGBM, XGBoost, feature engineering, streamlit]
 github_repo: https://github.com/Scuffy-sh/IEEE-CIS-Fraud-Detection
-excerpt: "Sistema de machine learning para detectar transacciones fraudulentas en tiempo real con AUC-ROC de 0.924."
+summary: "Sistema de machine learning para detectar transacciones fraudulentas en tiempo real con AUC-ROC de 0.924."
 ---
 
 # 🔒 IEEE-CIS Fraud Detection: Sistema de Detección de Fraude
