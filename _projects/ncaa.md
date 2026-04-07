@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "NCAA March Madness 2026: Predicción Probabilística del Torneo"
-date: 24/03/2026
+date: 2026-03-24
 tags: [python, pandas, scikit-learn, LightGBM, feature engineering]
 github_repo: https://github.com/Scuffy-sh/Featured_Prediction_Competition
 ---
