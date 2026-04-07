@@ -39,6 +39,6 @@
     </h2>
     {% assign meta_text = meta | strip %}
     {% if meta_text != blank %}<p class="archive__item-meta"><small>{{ meta_text }}</small></p>{% endif %}
-    {% if summary %}<p class="archive__item-excerpt p-summary" itemprop="description">{{ summary | markdownify | strip_html | truncate: 160 }}</p>{% endif %}
+    {% if summary %}<p class="archive__item-excerpt p-summary" itemprop="description">{{ summary | markdownify | strip_html | truncate: 250 }}</p>{% endif %}
   </article>
 </div>
