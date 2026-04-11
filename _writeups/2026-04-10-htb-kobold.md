@@ -58,31 +58,15 @@ Ese resultado ya ordena la investigacion: `bin` apunta a un producto conocido y 
 
 ## Metodología de análisis del vector inicial
 
-El punto de entrada no se eligio al azar. Se priorizo `mcp.kobold.htb` por tres motivos:
+El punto de entrada se priorizo en `mcp.kobold.htb` porque el nombre del subdominio y la respuesta del servicio en `3552/tcp` sugerian una aplicacion orientada a integracion, con backend JSON y endpoints operativos. En este tipo de superficies, cualquier accion tipo "connect" o "run" merece atencion temprana porque a menudo termina exponiendo ejecucion de procesos en el host.
 
-1. El nombre del subdominio y la propia aplicacion sugerian una interfaz orientada a integracion o orquestacion, algo que suele exponer endpoints JSON y operaciones de backend.
-2. La respuesta del servicio en `3552/tcp` mostraba una SPA sin demasiada informacion visual, lo que normalmente obliga a inspeccionar trafico, recursos cargados y llamadas XHR/fetch.
-3. En entornos reales, cualquier funcionalidad que permita "conectar", "probar", "ejecutar" o "registrar" servidores externos merece revisarse primero, porque muchas veces termina encapsulando ejecucion de procesos en el host.
-
-Las notas fuente no conservan una captura del proceso exacto de discovery dentro del navegador, asi que no puedo afirmar con evidencia directa si `/api/mcp/connect` se obtuvo desde DevTools, desde el codigo cliente o desde documentacion expuesta. Lo que si puedo afirmar es que el camino metodologicamente correcto y coherente con el resto de evidencias habria sido este:
-
-- abrir la aplicacion en navegador y usar **DevTools / Network tab** para identificar endpoints `POST`, payloads JSON y nombres de rutas con semantica operativa;
-- revisar el JavaScript servido al cliente en busca de rutas `/api/...`, nombres de funciones y estructuras de payload;
-- repetir las peticiones fuera del navegador con `curl`, para aislar comportamiento y verificar si existe autenticacion real o solo validacion del lado cliente;
-- buscar el nombre del producto (`MCP Jam`, `McpJam`, rutas observadas, mensajes de error) en **Google**, **GitHub**, **searchsploit**, **NVD** y buscadores de **CVE** para ver si existe una vulnerabilidad publica o un issue conocido.
+Las notas no conservan el discovery exacto del endpoint, asi que no afirmo si `/api/mcp/connect` se obtuvo desde DevTools, desde el JavaScript cliente o desde documentacion expuesta. Metodologicamente, el flujo razonable era inspeccionar trafico en **DevTools / Network tab**, revisar rutas `/api/...` en el frontend, reproducir peticiones con `curl` y contrastar el producto en **Google**, **GitHub**, **searchsploit**, **NVD** y buscadores de **CVE**.
 
 ## Investigación de vulnerabilidades y señales de riesgo
 
-En una evaluacion profesional, la investigacion de CVE/exploits no reemplaza la validacion manual; la complementa. En este caso, la prioridad no era encontrar un identificador CVE bonito, sino responder una pregunta mucho mas importante: "¿el backend acepta instrucciones del cliente que terminan creando un proceso en el host?" Como referencia adicional para quien quiera investigar el vector de MCP Jam, puede revisarse `CVE-2026-23744`, sin necesidad de apoyarse en esa referencia para sostener la explotacion observada aqui.
+Como referencia para quien quiera investigar mas a fondo el vector de MCP Jam, puede revisarse `CVE-2026-23744`. En cualquier caso, la explotacion no depende de esa referencia externa, sino de lo observado directamente en la aplicacion.
 
-Los indicadores tecnicos que vuelven a `/api/mcp/connect` especialmente sospechoso son muy fuertes:
-
-- el nombre del endpoint, `connect`, sugiere inicializacion de una integracion o servidor externo;
-- el payload observado incluye claves como `serverConfig`, `command`, `args` y `env`, que son exactamente los campos que uno esperaria al construir una llamada a `execve`, `spawn`, `fork/exec` o equivalente;
-- si un cliente puede enviar el binario a ejecutar y su lista de argumentos, la frontera entre "funcionalidad" y "RCE" desaparece por completo;
-- la ausencia de evidencia de autenticacion fuerte en la peticion convierte el hallazgo en un candidato inmediato a validacion manual.
-
-Dicho de forma simple: cuando una API acepta desde el cliente algo semantica y estructuralmente equivalente a `command + args + env`, ya no estamos ante una simple mala practica. Estamos ante un patron de diseño extremadamente cercano a ejecucion remota de comandos, y hay que validarlo de inmediato.
+Lo que vuelve especialmente sospechoso a `/api/mcp/connect` es que el payload acepta `serverConfig`, `command`, `args` y `env`, es decir, parametros semanticamente equivalentes a lanzar un proceso arbitrario desde el backend. Cuando una API permite definir binario y argumentos desde el cliente, el salto de funcionalidad insegura a RCE es minimo y justifica validacion inmediata.
 
 ## Acceso inicial con MCP Jam
 
