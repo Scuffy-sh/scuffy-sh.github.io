@@ -8,8 +8,6 @@ service_hint: MCP Jam API + PrivateBin + Arcane
 summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de PrivateBin para ejecutar PHP, extracción de credenciales redactadas y escape al host a través de Arcane/Docker."
 ---
 
-# HTB Kobold
-
 ## Información general
 
 | Campo | Valor |
