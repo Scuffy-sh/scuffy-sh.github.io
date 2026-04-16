@@ -282,6 +282,18 @@ Hallazgos útiles:
 - `127.0.0.1:3001` expone un servicio web interno.
 - `127.0.0.1:8025` sugiere una consola SMTP o MailHog.
 
+Antes de priorizar Gogs, convenía validar rápidamente si `8025` aportaba credenciales o enlaces de reseteo.
+
+Este comando reenvía el puerto local `8025` hacia la consola MailHog del objetivo.
+
+```bash
+ssh -L 8025:127.0.0.1:8025 ben@silentium.htb
+```
+
+La consola confirmó que se trataba de MailHog, pero el buzón estaba vacío y no aportó ningún salto adicional.
+
+![Consola MailHog sin mensajes útiles](/images/writeups/silentium/mailhog-empty.png)
+
 La pista realmente prometedora era `3001`, porque los artefactos del sistema apuntaban a una instalación local de **Gogs**.
 
 Este comando busca directorios asociados a Gogs para confirmar la tecnología y su ubicación de despliegue.
@@ -298,11 +310,23 @@ Este comando reenvía el puerto local `3001` hacia el Gogs interno del objetivo.
 ssh -L 3001:127.0.0.1:3001 ben@silentium.htb
 ```
 
+El túnel dejaba visible la portada de Gogs y confirmaba que la superficie interna era una forge Git completa, no un servicio auxiliar menor.
+
+![Portada del Gogs interno expuesto por túnel SSH](/images/writeups/silentium/gogs-home.png)
+
 El comportamiento de `Gogs`, sumado a la presencia de directorios de sesión y actividad reciente, justificaba probar un vector conocido de escritura vía symlink en repositorios.
 
 ## Escalada a root mediante Gogs
 
 El material fuente incluye un exploit completo que abusa de `CVE-2025-8110`, una vulnerabilidad de Gogs basada en symlink + sobrescritura de `.git/config` para forzar ejecución de comandos del lado del servidor. En este caso sí hay evidencia suficiente para nombrarla porque la PoC está incluida y la explotación termina con shell como `root`.
+
+La instancia además permitía registro de usuarios, lo que hacía posible crear una cuenta desechable y generar un token personal para interactuar con la API sin depender de credenciales privilegiadas previas dentro de Gogs.
+
+![Formulario de registro disponible en el Gogs interno](/images/writeups/silentium/gogs-signup.png)
+
+Una vez creada la cuenta, se generó un token de acceso personal. La captura se conserva porque contextualiza el flujo previo a la PoC, pero el valor del token fue redactado antes de publicarla.
+
+![Generación de token en Gogs con el valor redactado](/images/writeups/silentium/gogs-token-redacted.png)
 
 Antes de lanzar la PoC, hacía falta preparar un listener para la reverse shell resultante.
 
