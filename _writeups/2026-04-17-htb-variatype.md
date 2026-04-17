@@ -55,9 +55,7 @@ Subdominio relevante:
 
 - `portal.variatype.htb`
 
-![Variable Font Generator en variatype.htb/tools/variable-font-generator](/images/writeups/variatype/wfuzz-subdomains.png)
-
-Una vez hallado el portal, el siguiente paso era identificar rutas interesantes.
+Una vez hallamo el portal, el siguiente paso era identificar rutas interesantes.
 
 Este comando enumera directorios en el subdominio descubierto.
 
