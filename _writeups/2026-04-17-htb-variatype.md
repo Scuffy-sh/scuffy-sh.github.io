@@ -55,7 +55,7 @@ Subdominio relevante:
 
 - `portal.variatype.htb`
 
-![Resultado del fuzzing de subdominios](/images/writeups/variatype/wfuzz-subdomains.png)
+![Variable Font Generator en variatype.htb/tools/variable-font-generator](/images/writeups/variatype/wfuzz-subdomains.png)
 
 Una vez hallado el portal, el siguiente paso era identificar rutas interesantes.
 
@@ -71,7 +71,7 @@ Ruta descubierta:
 
 - `/files` (retorna 301, indica listing)
 
-![Variable Font Generator en variatype.htb/tools/variable-font-generator](/images/writeups/variatype/portal-vhost.png)
+![Portal vhost descubierto en variatype.htb](/images/writeups/variatype/portal-vhost.png)
 
 ## Explotación de Git expuesto
 
@@ -97,7 +97,7 @@ Inspeccionando el código fuente se encontraban las credenciales.
 cd git-repo && cat auth.php
 ```
 
-El archivo revelaba una移除 de credenciales hardcodeadas, pero faltaba la contraseña.
+El archivo revelaba una removal de credenciales hardcodeadas, pero faltaba la contraseña.
 
 Este comando inspecciona el historial de Git para buscar cambios sensibles.
 
