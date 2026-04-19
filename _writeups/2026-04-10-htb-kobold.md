@@ -5,7 +5,12 @@ date: 2026-04-10
 difficulty: F├ícil
 operating_system: Linux
 service_hint: MCP Jam API + PrivateBin + Arcane
-tags: RCE, LFI, Path Traversal, Credenciales, Docker
+tags:
+  - RCE
+  - LFI
+  - Path Traversal
+  - Credenciales
+  - Docker
 summary: "Cadena de explotaci├│n: RCE sin autenticaci├│n en MCP Jam, abuso de PrivateBin para ejecutar PHP, extracci├│n de credenciales redactadas y escape al host a trav├®s de Arcane/Docker."
 ---
 

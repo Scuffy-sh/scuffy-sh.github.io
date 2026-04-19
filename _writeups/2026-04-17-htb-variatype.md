@@ -5,7 +5,13 @@ date: 2026-04-17
 difficulty: Medio
 operating_system: Linux
 service_hint: Portal PHP + Git exposed + Variable Font Generator
-tags: Virtual Host, Git, LFI, CVE-2025-66034, Fonttools, Docker
+tags:
+  - Virtual Host
+  - Git
+  - LFI
+  - CVE-2025-66034
+  - Fonttools
+  - Docker
 summary: "Cadena de explotación: descubrimiento de subdominio portal.variatype.htb, explotación de repositorio Git expuesto, credenciales filtradas vía git history, LFI en funcionalidad de descarga, RCE mediante designspace malicioso con fonttools, escalation a través de pipeline de procesamiento de fuentes y sudo mal configurado."
 ---
 

@@ -5,7 +5,14 @@ date: 2026-04-16
 difficulty: Fácil
 operating_system: Linux
 service_hint: Flowise 3.0.5 + Gogs interno
-tags: Virtual Host, Flowise, Password Reset, RCE, Credenciales, Gogs, Privilege Escalation
+tags:
+  - Virtual Host
+  - Flowise
+  - Password Reset
+  - RCE
+  - Credenciales
+  - Gogs
+  - Privilege Escalation
 summary: "Cadena de explotación: descubrimiento de un entorno Flowise en staging, toma de cuenta por reseteo inseguro, RCE autenticada en la aplicación, reutilización de credenciales para SSH y escalada final a root mediante Gogs interno vulnerable a CVE-2025-8110."
 ---
 
