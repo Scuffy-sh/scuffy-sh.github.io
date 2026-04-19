@@ -20,7 +20,6 @@ summary: "Cadena de explotación: descubrimiento de un entorno Flowise en stagin
 
 | Campo | Valor |
 |-------|-------|
-| IP | `10.129.28.251` |
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
 | Tags | `Virtual Host`, `Flowise`, `Password Reset`, `RCE`, `Reutilización de credenciales`, `Gogs`, `Privilege Escalation` |

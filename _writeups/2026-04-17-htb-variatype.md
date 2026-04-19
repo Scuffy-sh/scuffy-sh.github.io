@@ -19,7 +19,6 @@ summary: "Cadena de explotación: descubrimiento de subdominio portal.variatype.
 
 | Campo | Valor |
 |-------|-------|
-| IP | `10.129.35.155` |
 | Sistema operativo | Linux |
 | Dificultad | Medio |
 | Tags | `Virtual Host`, `Git Dumping`, `LFI`, `CVE-2025-66034`, `Variable Font`, `Privilege Escalation` |

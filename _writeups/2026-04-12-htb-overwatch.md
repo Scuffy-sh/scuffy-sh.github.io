@@ -21,7 +21,6 @@ summary: "Cadena de explotación: acceso anónimo a SMB, extracción de credenci
 
 | Campo | Valor |
 |-------|-------|
-| IP | `10.129.33.208` |
 | Sistema operativo | Windows |
 | Dificultad | Medio |
 | Tags | `Active Directory`, `SMB`, `Ingeniería inversa`, `MSSQL`, `Linked Server`, `Abuso de DNS`, `SOAP`, `Command Injection` |

@@ -18,7 +18,6 @@ summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de Pr
 
 | Campo | Valor |
 |-------|-------|
-| IP | `10.129.31.14` |
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
 | Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker` |
