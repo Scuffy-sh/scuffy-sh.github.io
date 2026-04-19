@@ -37,10 +37,9 @@ permalink: /writeups/
     </div>
     {% if writeup.tags %}
     <div class="writeup-tags">
-{% assign tag_list = writeup.tags | split: ", " %}
-{% for tag in tag_list %}
-<span class="tag-pill">{{ tag }}</span>
-{% endfor %}
+      {% for tag in writeup.tags %}
+      <span class="tag-pill">{{ tag }}</span>
+      {% endfor %}
     </div>
     {% endif %}
   </div>
