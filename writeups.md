@@ -23,6 +23,7 @@ permalink: /writeups/
 {% for writeup in site.writeups %}
   <div class="writeup-item" 
        data-title="{{ writeup.title | downcase }}" 
+       data-tags="{{ writeup.tags | join: ' ' | downcase }}"
        data-difficulty="{{ writeup.difficulty | downcase }}" 
        data-os="{{ writeup.operating_system | downcase }}">
     <h3>
@@ -143,10 +144,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     writeupItems.forEach(item => {
       const title = item.dataset.title;
+      const tags = item.dataset.tags || '';
       const itemDifficulty = item.dataset.difficulty || '';
       const itemOs = item.dataset.os || '';
 
-      const matchesSearch = !searchTerm || title.includes(searchTerm);
+      const matchesSearch = !searchTerm || title.includes(searchTerm) || tags.includes(searchTerm);
       const matchesDifficulty = !difficulty || itemDifficulty === difficulty;
       const matchesOs = !os || itemOs.includes(os);
 
