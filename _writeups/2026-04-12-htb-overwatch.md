@@ -5,6 +5,7 @@ date: 2026-04-12
 difficulty: Medio
 operating_system: Windows
 service_hint: Active Directory + SMB anónimo + MSSQL linked server + SOAP interno
+tags: Active Directory, SMB, RE, MSSQL, Linked Server, DNS, SOAP, Command Injection
 summary: "Cadena de explotación: acceso anónimo a SMB, extracción de credenciales desde un binario .NET, abuso de linked servers en MSSQL mediante DNS para capturar otra cuenta y escalada final por inyección de comandos en un servicio SOAP interno."
 ---
 

@@ -35,8 +35,13 @@ permalink: /writeups/
       <span class="meta-date">{{ writeup.date | date: "%d/%m/%Y" }}</span>
       {% endif %}
     </div>
-    {% if writeup.summary %}
-    <p class="writeup-summary">{{ writeup.summary }}</p>
+    {% if writeup.tags %}
+    <div class="writeup-tags">
+{% assign tag_list = writeup.tags | split: ", " %}
+{% for tag in tag_list %}
+<span class="tag-pill">{{ tag }}</span>
+{% endfor %}
+    </div>
     {% endif %}
   </div>
 {% endfor %}
@@ -92,6 +97,20 @@ permalink: /writeups/
   padding: 0.125rem 0.375rem;
   background: #eee;
   border-radius: 3px;
+}
+.tag-pill {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.7rem;
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 12px;
+  margin-right: 0.25rem;
+  margin-top: 0.25rem;
+}
+.writeup-tags {
+  display: flex;
+  flex-wrap: wrap;
 }
 .writeup-summary {
   margin: 0;
