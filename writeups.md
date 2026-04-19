@@ -4,30 +4,20 @@ title: "Writeups"
 permalink: /writeups/
 ---
 
-## Buscador y Filtros
-
 <div class="writeups-filters">
-  <div class="filter-row">
-    <input type="text" id="writeup-search" placeholder="Buscar writeups..." class="search-input">
-  </div>
-  <div class="filter-row">
-    <select id="difficulty-filter" class="filter-select">
-      <option value="">Todas las dificultades</option>
-      <option value="fácil">Fácil</option>
-      <option value="medio">Medio</option>
-      <option value="difícil">Difícil</option>
-    </select>
-    <select id="os-filter" class="filter-select">
-      <option value="">Todos los sistemas</option>
-      <option value="linux">Linux</option>
-      <option value="windows">Windows</option>
-    </select>
-  </div>
+  <input type="text" id="writeup-search" placeholder="Buscar..." class="search-input">
+  <select id="difficulty-filter" class="filter-select">
+    <option value="">Dificultad</option>
+    <option value="fácil">Fácil</option>
+    <option value="medio">Medio</option>
+    <option value="difícil">Difícil</option>
+  </select>
+  <select id="os-filter" class="filter-select">
+    <option value="">Sistema</option>
+    <option value="linux">Linux</option>
+    <option value="windows">Windows</option>
+  </select>
 </div>
-
----
-
-## Lista de Writeups
 
 <div class="writeups-list" id="writeups-list">
 {% for writeup in site.writeups %}
@@ -58,69 +48,63 @@ permalink: /writeups/
 
 <style>
 .writeups-filters {
-  margin-bottom: 2rem;
-  padding: 1rem;
-  background: var(--page-background);
-  border-radius: 4px;
-}
-.filter-row {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-.filter-row:last-child {
-  margin-bottom: 0;
-}
-.search-input, .filter-select {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 .search-input {
   flex: 1;
+  min-width: 150px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
 }
 .filter-select {
-  min-width: 150px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: #fff;
 }
 .writeup-item {
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
-  transition: opacity 0.2s ease;
 }
 .writeup-item.hidden {
   display: none;
 }
 .writeup-item h3 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
 }
 .writeup-meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  font-size: 0.75rem;
   color: #666;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 .meta-difficulty, .meta-os {
-  padding: 0.125rem 0.5rem;
+  padding: 0.125rem 0.375rem;
   background: #eee;
   border-radius: 3px;
 }
-.meta-date {
-  color: #888;
-}
 .writeup-summary {
   margin: 0;
+  font-size: 0.875rem;
   color: #555;
 }
 .no-results {
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
   color: #666;
   background: #f9f9f9;
   border-radius: 4px;
+  font-size: 0.875rem;
 }
 </style>
 
