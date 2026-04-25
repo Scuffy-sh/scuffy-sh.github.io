@@ -10,6 +10,8 @@ Este portafolio recoge una selección de proyectos desarrollados en distintas á
 
 **Última actualización: Abril 2026**
 
+**Ver online: https://scuffy-sh.github.io**
+
 ---
 
 ### [<img src="/images/icono_ml.png" style="height:24px;vertical-align:middle;margin-right:8px" alt="ML"> Proyectos ML/DL](/projects/)
