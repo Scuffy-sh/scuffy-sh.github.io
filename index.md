@@ -8,12 +8,6 @@ Este portafolio recoge una selección de proyectos desarrollados en distintas á
 
 ---
 
-**Última actualización: Abril 2026**
-
-**Ver online: https://scuffy-sh.github.io**
-
----
-
 ### [<img src="/images/icono_ml.png" style="height:24px;vertical-align:middle;margin-right:8px" alt="ML"> Proyectos ML/DL](/projects/)
 
 En el apartado de Proyectos, se incluyen implementaciones de modelos de Machine Learning y Deep Learning, donde se exploran distintas técnicas de aprendizaje supervisado y profundo aplicadas a problemas reales, junto con su análisis, evaluación y resultados.
