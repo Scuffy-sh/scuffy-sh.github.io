@@ -50,7 +50,7 @@ Los indicadores más útiles de esta fase fueron:
 
 La captura original muestra la redirección inicial de la web hacia el virtual host configurado.
 
-![Redirección web a nanocorp.htb](/images/writeups/nanocorp/nanocorp-web-redirect.png)
+![Redirección web a nanocorp.htb](/Machines/Pasted image 20260504101013.png)
 
 ## Enumeración web y de dominio
 
@@ -103,7 +103,7 @@ responder -I tun0
 
 La captura muestra el momento en que se obtiene el hash del usuario `web_svc`.
 
-![Captura de hash con Responder](/images/writeups/nanocorp/nanocorp-responder.png)
+![Captura de hash con Responder](/Machines/Pasted image 20260504112918.png)
 
 Para desencadenar la autenticación, se crea un archivo `.library-ms` malicioso que apunta al servidor SMB del atacante, se comprime en un ZIP y se entrega al objetivo (por ejemplo, subiéndolo a través de la web o mediante ingeniería social).
 
@@ -156,7 +156,7 @@ bloodhound-python -d nanocorp.htb -u web_svc -p '[REDACTED]' -ns 10.129.56.49 -c
 
 La visualización en BloodHound reveló un hallazgo crítico: `web_svc` tenía privilegios para ser agregado al grupo `IT_SUPPORT`, y este grupo a su vez tenía permisos para modificar las credenciales de `monitoring_svc`.
 
-![Análisis de relaciones en BloodHound](/images/writeups/nanocorp/nanocorp-bloodhound.png)
+![Análisis de relaciones en BloodHound](/Machines/Pasted image 20260504115202.png)
 
 ## Compromiso de monitoring_svc
 
@@ -211,7 +211,7 @@ Start-Process msiexec.exe -ArgumentList "/fa C:\Program Files (x86)\checkmk\serv
 
 La captura original muestra el momento en que se obtiene la shell como SYSTEM.
 
-![Escalada a SYSTEM mediante MSI repair](/images/writeups/nanocorp/nanocorp-privesc.png)
+![Escalada a SYSTEM mediante MSI repair](/Machines/Pasted image 20260504122100.png)
 
 Con acceso a `nt authority\system`, ya solo quedaba leer la flag final. Su valor se omite deliberadamente.
 
