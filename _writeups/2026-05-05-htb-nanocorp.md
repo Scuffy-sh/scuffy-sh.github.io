@@ -166,6 +166,8 @@ El primer paso para aprovechar la relación descubierta fue agregar a `web_svc` 
 bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 add groupMember IT_SUPPORT web_svc
 ```
 
+![Escalada a SYSTEM mediante MSI repair](/images/writeups/nanocorp/Pasted image 20260504122100.png)
+
 Una vez como miembro de `IT_SUPPORT`, se procede a resetear la contraseña de `monitoring_svc`.
 
 ```bash
@@ -210,8 +212,6 @@ Start-Process msiexec.exe -ArgumentList "/fa C:\Program Files (x86)\checkmk\serv
 ```
 
 La captura original muestra el momento en que se obtiene la shell como SYSTEM.
-
-![Escalada a SYSTEM mediante MSI repair](/images/writeups/nanocorp/Pasted image 20260504122100.png)
 
 Con acceso a `nt authority\system`, ya solo quedaba leer la flag final. Su valor se omite deliberadamente.
 
