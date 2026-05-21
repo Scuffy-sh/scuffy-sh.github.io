@@ -22,7 +22,7 @@ summary: "Cadena de explotación: fuzzing de subdominios descubre Cacti 1.2.28, 
 |-------|-------|
 | Sistema operativo | Windows |
 | Dificultad | Fácil |
-| Tags | `CVE`, `Cacti`, `Docker API`, `RCE`, `Privilege Escalation` |
+| Tags | `CVE-2025-24367`, `CVE-2025-9074`, `Cacti`, `Docker API`, `RCE`, `Privilege Escalation` |
 
 ## Reconocimiento
 

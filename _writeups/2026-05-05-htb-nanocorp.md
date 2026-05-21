@@ -23,7 +23,7 @@ summary: "Cadena de explotación: NTLM relay vía CVE-2025-24054 para compromete
 |-------|-------|
 | Sistema operativo | Windows |
 | Dificultad | Hard |
-| Tags | `Active Directory`, `NTLM Relay`, `CVE`, `BloodHound`, `Privilege Escalation`, `Checkmk`, `Responder` |
+| Tags | `Active Directory`, `NTLM Relay`, `CVE-2025-24054`, `CVE-2024-0670`, `BloodHound`, `Privilege Escalation`, `Checkmk`, `Responder` |
 
 ## Reconocimiento
 

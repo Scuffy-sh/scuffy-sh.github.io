@@ -20,7 +20,7 @@ summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de Pr
 |-------|-------|
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
-| Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker` |
+| Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker`, `CVE-2026-23744` |
 
 ## Reconocimiento
 
