@@ -136,6 +136,12 @@ DB_USER=monitorsdbuser
 DB_PASS=[REDACTED]
 ```
 
+Seguimos con el archivo de configuración principal de Cacti. Primero filtramos por "user" para localizar las líneas de credenciales de la base de datos.
+
+```bash
+www-data@821fbd6a43fa:~/html/cacti$ cat /var/www/html/cacti/include/config.php | grep user
+```
+
 También revisamos los archivos de configuración de Cacti para encontrar las credenciales de su propia base de datos MySQL. Con la contraseña obtenida nos conectamos a MariaDB para explorar las tablas internas del sistema.
 
 ```bash
