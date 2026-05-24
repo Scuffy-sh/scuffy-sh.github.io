@@ -262,6 +262,13 @@ Invoke-WebRequest -Uri http://127.0.0.1:8000/MonitorService `
 
 La respuesta devolvió el contenido de `C:\Users\Administrator\Desktop\root.txt`, lo que confirma una inyección de comandos en la implementación de `KillProcess`. El valor de la flag se omite deliberadamente.
 
+## Flags
+
+| Tipo | Flag |
+|------|------|
+| user.txt | `[REDACTED]` |
+| root.txt | `[REDACTED]` |
+
 ## Cadena de explotación
 
 ```text
@@ -292,3 +299,7 @@ SMB anónimo en software$
 3. Auditar linked servers en MSSQL, restringir `rpc out` y evitar autenticaciones salientes reutilizables hacia destinos resolubles por DNS interno manipulable.
 4. Limitar quién puede crear registros DNS en la zona y monitorizar cambios inesperados en nombres sensibles.
 5. Corregir la implementación de `KillProcess` para no concatenar entradas del usuario en comandos del sistema.
+
+## Conclusión
+
+Overwatch fue una máquina compleja que combinó múltiples técnicas: abuso de Active Directory mediante NTLM Relay, ingeniería inversa de un binario .NET, explotación de SQL Server mediante linked servers y resolución DNS maliciosa, y finalmente escalada a SYSTEM. La lección principal es la importancia de entender cómo interactúan los servicios internos (DNS, SQL, SMB) en un entorno de dominio.

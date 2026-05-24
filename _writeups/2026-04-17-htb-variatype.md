@@ -147,6 +147,8 @@ Host: portal.variatype.htb
 
 La vulnerabilidad permite leer archivos locales del sistema.
 
+Probamos leer varios archivos del sistema mediante el LFI: `/etc/passwd`, `/proc/self/environ`, etc. La mayoría devolvían contenido útil pero no crítico. El hallazgo clave fue el código fuente de la aplicación, que reveló el uso de fonttools.
+
 Este comando lee el archivo de usuarios para enumerar cuentas disponibles.
 
 ```bash
@@ -156,6 +158,8 @@ curl -s "http://portal.variatype.htb/download.php?f=....//....//....//....//....
 Usuarios relevantes:
 
 - `steve:x:1000:1000:steve,,,:/home/steve:/bin/bash`
+
+Intentamos explotar el LFI para obtener una shell directamente mediante log poisoning, pero el servidor no registraba logs accesibles. Tuvimos que buscar otra forma de convertir la lectura de archivos en ejecución de código.
 
 ## RCE mediante Variable Font
 

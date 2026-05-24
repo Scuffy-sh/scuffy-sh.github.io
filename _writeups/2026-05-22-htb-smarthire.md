@@ -70,6 +70,8 @@ Una vez dentro, descubrimos que la aplicación permite subir archivos `.csv` con
 
 Investigando el comportamiento de la aplicación, vimos que `/upload_hiring_data` entrena un modelo y registra una versión, mientras que `/predict` carga el modelo para hacer predicciones. Esto nos hizo sospechar que detrás había MLflow.
 
+Probamos subir un CSV normal para ver cómo procesaba los datos la aplicación. El sistema lo aceptó y entrenó el modelo sin errores, pero no pudimos extraer información sensible de la respuesta. Necesitábamos un enfoque más agresivo.
+
 Fuzzeamos subdominios con wfuzz para encontrar servicios ocultos detrás de virtual hosts alternativos.
 
 ```bash
@@ -83,6 +85,8 @@ whatweb http://models.smarthire.htb
 ```
 
 El encabezado `WWW-Authenticate[mlflow][Basic]` confirmó que se trataba de un servidor MLflow Tracking con autenticación Basic.
+
+Intentamos acceder a `models.smarthire.htb` con credenciales por defecto como admin:admin, pero el panel rechazó la autenticación. Seguimos explorando la aplicación principal.
 
 ## Explotación
 

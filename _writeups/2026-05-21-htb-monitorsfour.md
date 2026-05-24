@@ -179,10 +179,10 @@ MariaDB [cacti]> SELECT id,username,password FROM user_auth;
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ cat /home/marcus/user.txt
-9b3af7e5094c885ccfad7b115587df41
+[REDACTED]
 ```
 
-**Flag de usuario:** `9b3af7e5094c885ccfad7b115587df41`
+**Flag de usuario:** `[REDACTED]`
 
 ## Escalada de privilegios
 
@@ -263,10 +263,10 @@ Consultamos los logs del contenedor con el endpoint `/logs`. La salida contiene 
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl http://192.168.65.7:2375/containers/20dd4fc655bd/logs?stdout=true
-357b896e8498f073afb1d392deae9076
+[REDACTED]
 ```
 
-**Flag de root:** `357b896e8498f073afb1d392deae9076`
+**Flag de root:** `[REDACTED]`
 
 ## Conclusión
 
