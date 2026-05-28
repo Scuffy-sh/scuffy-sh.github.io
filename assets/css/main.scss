@@ -1,0 +1,155 @@
+---
+---
+
+@charset "utf-8";
+
+// Dark skin (must come before theme so the theme picks up the variable overrides)
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}";
+
+// Variable overrides (must come before theme so components use the new values)
+$max-width: 1600px;
+
+// Main theme
+@import "minimal-mistakes";
+
+// ==========================================================================
+// Custom overrides
+// ==========================================================================
+
+// Site title — subtitle styling
+.site-title {
+  display: block;
+}
+.site-subtitle {
+  display: block;
+  font-size: 0.75em !important;
+  color: #7c7c7c !important;
+  font-weight: 400 !important;
+  margin: 0;
+  line-height: 1.2;
+}
+
+// Info table — key-value style, hide thead
+.info-table thead {
+  display: none;
+}
+.info-table {
+  margin-bottom: 1em;
+}
+.info-table td:first-child {
+  font-weight: bold;
+  white-space: nowrap;
+  padding-right: 2em;
+}
+
+// Writeup listing page — filters and items
+.writeups-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: transparent;
+}
+
+.filter-select {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: #2d2d2d;
+  color: #eaeaea;
+}
+
+// Dark headings — targeting the correct wrapper class with a strong visible color
+.page__content h1,
+.page__content h2,
+.page__content h3,
+.page__content h4 {
+  color: #00bcd4;
+}
+
+// Select/option dark mode — ensure dropdowns render dark everywhere
+select,
+select option,
+.filter-select,
+.filter-select option {
+  background-color: #2d2d2d !important;
+  color: #eaeaea !important;
+}
+
+// Page centering — MM's .page uses float:right + asymmetric width calc.
+// When there's no sidebar (classes: wide), this causes a left offset.
+.wide .page {
+  width: 100%;
+  float: none;
+  padding-right: 0;
+}
+
+// ==========================================================================
+// Writeup cards — redesigned listing
+// ==========================================================================
+
+.writeup-card {
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1.2em;
+  margin-bottom: 1em;
+  background: #1e1e1e;
+  transition: border-color 0.2s;
+}
+
+.writeup-card:hover {
+  border-color: #00bcd4;
+}
+
+.writeup-card__title {
+  margin: 0 0 0.5em;
+  font-size: 1.2em;
+}
+
+.writeup-card__title a {
+  color: #eaeaea;
+  text-decoration: none;
+}
+
+.writeup-card__title a:hover {
+  color: #00bcd4;
+}
+
+.writeup-card__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+
+.writeup-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.writeup-card__tag {
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.78em;
+  color: #ccc;
+}
+
+.writeup-card__date {
+  font-size: 0.75em;
+  color: #888;
+  white-space: nowrap;
+}

@@ -20,66 +20,64 @@ permalink: /writeups/
 </div>
 
 <div class="writeups-list" id="writeups-list">
-{% for writeup in site.writeups %}
-  <div class="writeup-item" 
-       data-title="{{ writeup.title | downcase }}" 
+{% for writeup in site.writeups reversed %}
+  <article class="writeup-card"
+       data-title="{{ writeup.title | downcase }}"
        data-tags="{{ writeup.tags | join: ' ' | downcase }}"
-       data-difficulty="{{ writeup.difficulty | downcase }}" 
+       data-difficulty="{{ writeup.difficulty | downcase }}"
        data-os="{{ writeup.operating_system | downcase }}">
-    <h3>
-      <a href="{{ writeup.url }}">{{ writeup.title }}</a>
-    </h3>
-    <div class="writeup-meta">
-      <span class="meta-difficulty">{{ writeup.difficulty }}</span>
-      <span class="meta-os">{{ writeup.operating_system }}</span>
-      {% if writeup.date %}
-      <span class="meta-date">{{ writeup.date | date: "%d/%m/%Y" }}</span>
-      {% endif %}
+    <div class="writeup-card__header">
+      <h2 class="writeup-card__title">
+        <a href="{{ writeup.url | relative_url }}">{{ writeup.title | remove: " - Writeup" }}</a>
+      </h2>
     </div>
-    {% if writeup.tags %}
-    <div class="writeup-tags">
-      {% for tag in writeup.tags %}
-      <span class="tag-pill">{{ tag }}</span>
-      {% endfor %}
+    <div class="writeup-card__meta">
+      <div class="writeup-card__tags">
+        <span class="writeup-card__tag">{{ writeup.difficulty }}</span>
+        <span class="writeup-card__tag">{{ writeup.operating_system }}</span>
+        {% for tag in writeup.tags limit:5 %}
+        <span class="writeup-card__tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      <time class="writeup-card__date" datetime="{{ writeup.date | date_to_xmlschema }}">{{ writeup.date | date: "%d/%m/%Y" }}</time>
     </div>
-    {% endif %}
-  </div>
+  </article>
 {% endfor %}
 </div>
 
 <div class="no-results" id="no-results" style="display: none;">
   <p>No se encontraron writeups con los filtros seleccionados.</p>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const searchInput = document.getElementById('writeup-search');
-  const difficultyFilter = document.getElementById('difficulty-filter');
-  const osFilter = document.getElementById('os-filter');
-  const writeupItems = document.querySelectorAll('.writeup-item');
-  const noResults = document.getElementById('no-results');
+  var searchInput = document.getElementById('writeup-search');
+  var difficultyFilter = document.getElementById('difficulty-filter');
+  var osFilter = document.getElementById('os-filter');
+  var writeupCards = document.querySelectorAll('.writeup-card');
+  var noResults = document.getElementById('no-results');
 
   function filterWriteups() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const difficulty = difficultyFilter.value.toLowerCase();
-    const os = osFilter.value.toLowerCase();
-    
-    let visibleCount = 0;
+    var searchTerm = searchInput.value.toLowerCase();
+    var difficulty = difficultyFilter.value.toLowerCase();
+    var os = osFilter.value.toLowerCase();
+    var visibleCount = 0;
 
-    writeupItems.forEach(item => {
-      const title = item.dataset.title;
-      const tags = item.dataset.tags || '';
-      const itemDifficulty = item.dataset.difficulty || '';
-      const itemOs = item.dataset.os || '';
+    writeupCards.forEach(function(card) {
+      var title = card.dataset.title;
+      var tags = card.dataset.tags || '';
+      var itemDifficulty = card.dataset.difficulty || '';
+      var itemOs = card.dataset.os || '';
 
-      const matchesSearch = !searchTerm || title.includes(searchTerm) || tags.includes(searchTerm);
-      const matchesDifficulty = !difficulty || itemDifficulty === difficulty;
-      const matchesOs = !os || itemOs.includes(os);
+      var matchesSearch = !searchTerm || title.indexOf(searchTerm) !== -1 || tags.indexOf(searchTerm) !== -1;
+      var matchesDifficulty = !difficulty || itemDifficulty === difficulty;
+      var matchesOs = !os || itemOs.indexOf(os) !== -1;
 
       if (matchesSearch && matchesDifficulty && matchesOs) {
-        item.classList.remove('hidden');
+        card.style.display = '';
         visibleCount++;
       } else {
-        item.classList.add('hidden');
+        card.style.display = 'none';
       }
     });
 
