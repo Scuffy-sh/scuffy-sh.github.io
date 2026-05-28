@@ -153,3 +153,12 @@ select option,
   color: #888;
   white-space: nowrap;
 }
+
+// Hide footer elements on writeup pages
+.page__date {
+  display: none;
+}
+
+.pagination {
+  display: none;
+}
