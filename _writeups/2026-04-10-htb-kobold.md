@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB Kobold - Writeup"
 date: 2026-04-10
 difficulty: Fácil
@@ -21,6 +22,7 @@ summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de Pr
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
 | Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker`, `CVE-2026-23744` |
+{: .info-table}
 
 ## Reconocimiento
 

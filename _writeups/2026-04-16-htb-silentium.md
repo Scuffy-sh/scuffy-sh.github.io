@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB Silentium - Writeup"
 date: 2026-04-16
 difficulty: Fácil
@@ -23,6 +24,7 @@ summary: "Cadena de explotación: descubrimiento de un entorno Flowise en stagin
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
 | Tags | `Virtual Host`, `Flowise`, `Password Reset`, `RCE`, `Reutilización de credenciales`, `Gogs`, `CVE-2025-8110`, `Privilege Escalation` |
+{: .info-table}
 
 ## Reconocimiento
 

@@ -3,7 +3,7 @@
     <strong>Tags: </strong>
     <span itemprop="keywords">
       {% for tag in page.tags %}
-        <span class="tag-pill" style="display: inline-block; padding: 2px 8px; margin: 2px; background: #e8e8e8; border-radius: 3px; font-size: 0.8em;">{{ tag }}</span>
+        <a class="page__taxonomy-item" rel="tag">{{ tag }}</a>
       {% endfor %}
     </span>
   </div>

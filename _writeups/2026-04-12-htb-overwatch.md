@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB Overwatch - Writeup"
 date: 2026-04-12
 difficulty: Medio
@@ -24,6 +25,7 @@ summary: "Cadena de explotación: acceso anónimo a SMB, extracción de credenci
 | Sistema operativo | Windows |
 | Dificultad | Medio |
 | Tags | `Active Directory`, `SMB`, `Ingeniería inversa`, `MSSQL`, `Linked Server`, `Abuso de DNS`, `SOAP`, `Command Injection` |
+{: .info-table}
 
 ## Reconocimiento
 

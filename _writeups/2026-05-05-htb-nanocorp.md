@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB NanoCorp - Writeup"
 date: 2026-05-05
 difficulty: Hard
@@ -24,6 +25,7 @@ summary: "Cadena de explotación: NTLM relay vía CVE-2025-24054 para compromete
 | Sistema operativo | Windows |
 | Dificultad | Hard |
 | Tags | `Active Directory`, `NTLM Relay`, `CVE-2025-24054`, `CVE-2024-0670`, `BloodHound`, `Privilege Escalation`, `Checkmk`, `Responder` |
+{: .info-table}
 
 ## Reconocimiento
 

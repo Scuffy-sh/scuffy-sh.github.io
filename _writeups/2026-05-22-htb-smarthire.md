@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB SmartHire - Writeup"
 date: 2026-05-22
 difficulty: Medio
@@ -24,6 +25,7 @@ summary: "Explotación de CVE-2024-37054 (MLflow pickle deserialization RCE) a t
 | Sistema operativo | Linux |
 | Dificultad | Medio |
 | Tags | `CVE-2024-37054`, `MLflow`, `RCE`, `Pickle Deserialization`, `Path Hijack`, `SUID` |
+{: .info-table}
 
 ## Reconocimiento
 

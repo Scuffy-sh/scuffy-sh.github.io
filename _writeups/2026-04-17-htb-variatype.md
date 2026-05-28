@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB VariaType - Writeup"
 date: 2026-04-17
 difficulty: Medio
@@ -22,6 +23,7 @@ summary: "Cadena de explotación: descubrimiento de subdominio portal.variatype.
 | Sistema operativo | Linux |
 | Dificultad | Medio |
 | Tags | `Virtual Host`, `Git Dumping`, `LFI`, `CVE-2025-66034`, `Variable Font`, `Privilege Escalation` |
+{: .info-table}
 
 ## Reconocimiento
 

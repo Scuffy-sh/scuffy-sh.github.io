@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB Reactor - Writeup"
 date: 2026-05-23
 difficulty: Fácil
@@ -25,6 +26,7 @@ summary: "Explotación de CVE-2025-55182 (React2Shell) en Next.js 15.0.3 para ob
 | Dificultad | Fácil |
 | IP | 10.129.7.228 |
 | Tags | `CVE-2025-55182`, `React2Shell`, `Next.js`, `Node.js`, `Debugger`, `RCE` |
+{: .info-table}
 
 ## Reconocimiento
 

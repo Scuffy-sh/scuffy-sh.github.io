@@ -1,5 +1,6 @@
 ---
 layout: single
+classes: wide
 title: "HTB MonitorsFour - Writeup"
 date: 2026-05-21
 difficulty: Fácil
@@ -23,6 +24,7 @@ summary: "Cadena de explotación: fuzzing de subdominios descubre Cacti 1.2.28, 
 | Sistema operativo | Windows |
 | Dificultad | Fácil |
 | Tags | `CVE-2025-24367`, `CVE-2025-9074`, `Cacti`, `Docker API`, `RCE`, `Privilege Escalation` |
+{: .info-table}
 
 ## Reconocimiento
 
