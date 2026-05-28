@@ -59,6 +59,18 @@ Subdominios relevantes:
 
 Ese resultado ya ordena la investigación: `bin` apunta a un producto conocido y `mcp` sugiere una aplicación más especializada, probablemente con endpoints API propios.
 
+## Enumeración
+
+Con los subdominios identificados, profundizamos en cada uno para entender su funcionalidad.
+
+### MCP Jam (`mcp.kobold.htb`)
+
+El servicio en `3552/tcp` con frontend SPA y rutas como `/api/app-images/favicon` sugería una consola administrativa. Inspeccionando el tráfico desde las DevTools del navegador, identificamos endpoints API como `/api/mcp/connect` que aceptaban configuraciones JSON con parámetros `serverConfig`, `command`, `args` y `env`.
+
+### PrivateBin (`bin.kobold.htb`)
+
+PrivateBin es una aplicación conocida para compartir pastas cifradas. La instalación parecía estándar con rutas como `/js/` y `/css/`. El uso de cookies como `template` para cargar plantillas era un punto de interés evidente.
+
 ## Metodología de análisis del vector inicial
 
 El punto de entrada se priorizó en `mcp.kobold.htb` porque el nombre del subdominio y la respuesta del servicio en `3552/tcp` sugerían una aplicación orientada a integración, con backend JSON y endpoints operativos. En este tipo de superficies, cualquier acción tipo "connect" o "run" merece atención temprana porque a menudo termina exponiendo ejecución de procesos en el host.
@@ -226,12 +238,19 @@ MCP Jam /api/mcp/connect sin auth
 -> acceso a /hostfs/root/root.txt
 ```
 
+## Flags
+
+| Flag | Valor |
+|------|-------|
+| `user.txt` | `[REDACTED]` |
+| `root.txt` | `[REDACTED]` |
+
 ## Lecciones técnicas
 
-- Una API que acepta comandos arbitrarios desde el cliente equivale a RCE si no existe autenticación fuerte y validación estricta.
-- Los permisos de grupo aparentemente inocentes pueden convertirse en ejecución de código al combinarse con otra aplicación mal diseñada.
-- PrivateBin no solo filtraba información: permitía convertir escritura en disco más traversal de plantillas en ejecución de comandos.
-- Cualquier panel con acceso al socket Docker debe tratarse como acceso equivalente a `root` en el host.
+1. Una API que acepta comandos arbitrarios desde el cliente equivale a RCE si no existe autenticación fuerte y validación estricta.
+2. Los permisos de grupo aparentemente inocentes pueden convertirse en ejecución de código al combinarse con otra aplicación mal diseñada.
+3. PrivateBin no solo filtraba información: permitía convertir escritura en disco más traversal de plantillas en ejecución de comandos.
+4. Cualquier panel con acceso al socket Docker debe tratarse como acceso equivalente a `root` en el host.
 
 ## Remediación
 
@@ -239,3 +258,7 @@ MCP Jam /api/mcp/connect sin auth
 2. Impedir que PrivateBin cargue templates o recursos desde rutas controlables por el usuario.
 3. Rotar y segregar credenciales entre servicios; una clave interna no debe reutilizarse en varios componentes.
 4. Restringir el acceso a Docker y bloquear la creación de contenedores privilegiados con montajes del host.
+
+## Conclusión
+
+HTB Kobold es una máquina de dificultad Fácil que combina RCE sin autenticación en MCP Jam, abuso de PrivateBin para ejecución de código mediante path traversal en plantillas, extracción de credenciales desde configuración interna, y escalada a root mediante escape de contenedor Docker a través del panel Arcane. La lección principal es que los paneles de administración con acceso al socket Docker constituyen un riesgo de seguridad máximo, equivalente a entregar root en el host.

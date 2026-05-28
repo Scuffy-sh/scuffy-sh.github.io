@@ -90,6 +90,21 @@ Archivos especialmente interesantes dentro de `Monitoring`:
 - `overwatch.exe.config`
 - `overwatch.pdb`
 
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en el acceso anónimo a SMB porque exponía un share no estándar llamado `software$` que no forma parte de los recursos predeterminados del dominio (`NETLOGON`, `SYSVOL`). Este tipo de shares operativos suele contener binarios, configuraciones y artefactos de despliegue que pueden filtrar secretos.
+
+El hallazgo del binario `.NET` con monikers como `CheckEdgeHistory` y `KillProcess` en el PDB justificaba ingeniería inversa inmediata: si un ejecutable de monitoreo contiene credenciales embebidas, ese secreto puede abrir el siguiente salto lateral sin necesidad de exploits adicionales.
+
+## Investigación de vulnerabilidades
+
+Esta máquina no depende de CVEs específicas sino del abuso de malas prácticas de configuración y diseño:
+
+- **SMB anónimo**: El share `software$` era accesible sin autenticación, exponiendo artefactos de deployment.
+- **Credenciales embebidas**: El binario `overwatch.exe` contenía una cadena de conexión SQL en texto claro.
+- **Linked server sin restricciones**: La relación con `SQL07` tenía `rpc_out` y `data_access` habilitados, permitiendo consultas distribuidas y autenticación saliente.
+- **DNS interno modificable**: El usuario `sqlsvc` podía crear registros DNS, permitiendo redirigir `SQL07` hacia el atacante y capturar credenciales NTLM.
+
 ## Análisis del binario de monitoreo
 
 El `.config` confirma que la aplicación expone un servicio WCF interno en `http://overwatch.htb:8000/MonitorService`, pero todavía no daba acceso directo desde fuera. Lo importante en esta fase era buscar secretos operativos o pistas sobre la lógica del programa.
@@ -287,10 +302,10 @@ SMB anónimo en software$
 
 ## Lecciones técnicas
 
-- Un share SMB anónimo con artefactos de despliegue puede equivaler a exposición total si contiene binarios reversibles, PDBs o secretos embebidos.
-- Un linked server en MSSQL no es solo una comodidad administrativa: también es una superficie de pivoting y captura de credenciales si la resolución de nombres o la autenticación no están bien controladas.
-- Reutilizar una cuenta operacional como `sqlmgmt` para acceso remoto por WinRM convierte una filtración puntual en compromiso completo del host.
-- Un servicio interno no deja de ser crítico por escuchar solo en `127.0.0.1`; si acepta parámetros que terminan en shell commands, cualquier usuario con acceso local puede convertirlo en escalada de privilegios.
+1. Un share SMB anónimo con artefactos de despliegue puede equivaler a exposición total si contiene binarios reversibles, PDBs o secretos embebidos.
+2. Un linked server en MSSQL no es solo una comodidad administrativa: también es una superficie de pivoting y captura de credenciales si la resolución de nombres o la autenticación no están bien controladas.
+3. Reutilizar una cuenta operacional como `sqlmgmt` para acceso remoto por WinRM convierte una filtración puntual en compromiso completo del host.
+4. Un servicio interno no deja de ser crítico por escuchar solo en `127.0.0.1`; si acepta parámetros que terminan en shell commands, cualquier usuario con acceso local puede convertirlo en escalada de privilegios.
 
 ## Remediación
 

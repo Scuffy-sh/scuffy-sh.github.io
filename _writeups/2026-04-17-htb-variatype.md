@@ -77,6 +77,20 @@ Ruta descubierta:
 
 ![Portal vhost descubierto en variatype.htb](/images/writeups/variatype/portal-vhost.png)
 
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en el subdominio `portal.variatype.htb` porque un portal interno suele contener funcionalidades no disponibles en el sitio público. La presencia de un directorio `/files` con listing habilitado justificaba una inspección inmediata.
+
+Detectamos que el directorio `.git` estaba expuesto, lo que convertía el portal en una fuente de código fuente y potenciales credenciales. En lugar de forzar vulnerabilidades ciegas, priorizamos dumpear el repositorio completo para entender la lógica de la aplicación desde el código mismo.
+
+## Investigación de vulnerabilidades
+
+Tres vectores principales se identificaron durante la fase de investigación:
+
+- **Git expuesto**: El directorio `.git` accesible públicamente permitió dumpear el repositorio completo, donde el historial de Git reveló credenciales eliminadas en un commit inalcanzable.
+- **LFI en descarga**: La funcionalidad `/download.php?f=` era vulnerable a path traversal, permitiendo lectura de archivos del sistema y del código fuente de la aplicación.
+- **CVE-2025-66034 en fonttools**: Vulnerabilidad de RCE en el parser de archivos `.designspace` que permite ejecución de código a través de elementos CDATA maliciosos en labels de ejes de fuentes variables.
+
 ## Explotación de Git expuesto
 
 El siguiente paso lógico era verificar si el directorio `.git` estaba accesible, una superficie clásica que suele contener código fuente y posible información sensible.
@@ -408,12 +422,19 @@ Virtual host portal.variatype.htb
 -> shell como root
 ```
 
+## Flags
+
+| Flag | Valor |
+|------|-------|
+| `user.txt` | `[REDACTED]` |
+| `root.txt` | `[REDACTED]` |
+
 ## Lecciones técnicas
 
-- Git expuesto puede filtrar credenciales eliminadas del historial; git-dumper es esencial en estos escenarios.
-- CVE-2025-66034 permite RCE en parsers de designspace variable font a través de elementos CDATA maliciosos.
-- Scripts de procesamiento de archivos que aceptan nombres con ciertos caracteres especiales pueden ser abusados para inyección de comandos.
-- La validación de URLs debe ir más allá del scheme y debe sanitizar paths antes de escribir archivos.
+1. Git expuesto puede filtrar credenciales eliminadas del historial; git-dumper es esencial en estos escenarios.
+2. CVE-2025-66034 permite RCE en parsers de designspace variable font a través de elementos CDATA maliciosos.
+3. Scripts de procesamiento de archivos que aceptan nombres con ciertos caracteres especiales pueden ser abusados para inyección de comandos.
+4. La validación de URLs debe ir más allá del scheme y debe sanitizar paths antes de escribir archivos.
 
 ## Remediación
 
@@ -421,3 +442,7 @@ Virtual host portal.variatype.htb
 2. Aplicar patches a fonttools/variablelib para la vulnerabilidad CVE-2025-66034.
 3. Validar estrictamente nombres de archivos en pipelines de procesamiento, rechazando caracteres especiales peligrosos.
 4. Restringir el uso de sudo a scripts que no permitan escritura arbitraria a directorios sensibles.
+
+## Conclusión
+
+HTB VariaType es una máquina de dificultad Medio que combina exposición de repositorio Git con credenciales en el historial, path traversal para lectura de archivos, explotación de CVE-2025-66034 en fonttools para RCE vía archivos designspace maliciosos, inyección de comandos en un pipeline de procesamiento de fuentes, y escalada a root mediante abuso de sudo en un instalador de plugins que permitía escritura a `authorized_keys`. La lección principal es que la exposición de un directorio `.git` puede comprometer toda la cadena de seguridad.

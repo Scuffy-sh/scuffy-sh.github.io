@@ -74,6 +74,20 @@ Subdominio relevante:
 
 Antes de inspeccionar la SPA, probamos fuzzing de directorios sobre staging, pero no encontramos nada fuera de lo esperado.
 
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en el subdominio `staging.silentium.htb` porque los entornos de staging suelen tener configuraciones menos restrictivas que producción, incluyendo endpoints de depuración, registros de usuario abiertos o flujos de autenticación mal implementados.
+
+La identificación de Flowise 3.0.5 como plataforma low-code orientó la investigación hacia endpoints de autenticación y recuperación de cuenta. En aplicaciones de este tipo, un flujo de reset mal implementado puede equivaler a takeover completo de la cuenta.
+
+## Investigación de vulnerabilidades
+
+Dos vectores principales guiaron la fase de investigación:
+
+- **Password reset con fuga de información**: El endpoint `account/forgot-password` no solo diferenciaba usuarios válidos de inexistentes, sino que devolvía un `tempToken` reutilizable en la respuesta, permitiendo reseteo de contraseña sin verificación adicional.
+- **RCE vía customMCP en Flowise**: La plataforma permite cargar nodos personalizados que evalúan configuración controlada por el usuario, un patrón clásico de ejecución de código dinámico sin las restricciones necesarias.
+- **CVE-2025-8110 en Gogs**: Vulnerabilidad de symlink en repositorios que permite sobrescribir `.git/config` con un `sshCommand` malicioso, forzando ejecución de comandos del lado del servidor.
+
 Una vez hallado el entorno `staging`, descargamos la portada para identificar la tecnología.
 
 ```bash
@@ -381,12 +395,19 @@ Virtual host staging.silentium.htb
 -> shell como root
 ```
 
+## Flags
+
+| Flag | Valor |
+|------|-------|
+| `user.txt` | `[REDACTED]` |
+| `root.txt` | `[REDACTED]` |
+
 ## Lecciones técnicas
 
-- Un flujo de recuperación de cuenta no puede devolver secretos reutilizables al cliente; eso convierte password reset en account takeover.
-- En plataformas tipo low-code o AI workflow, cualquier campo evaluado dinámicamente debe tratarse como superficie de RCE.
-- Las credenciales de aplicación no deben reutilizarse como contraseña del sistema.
-- Un servicio interno accesible solo por localhost sigue siendo explotable si un usuario comprometido puede tunelizarlo por SSH.
+1. Un flujo de recuperación de cuenta no puede devolver secretos reutilizables al cliente; eso convierte password reset en account takeover.
+2. En plataformas tipo low-code o AI workflow, cualquier campo evaluado dinámicamente debe tratarse como superficie de RCE.
+3. Las credenciales de aplicación no deben reutilizarse como contraseña del sistema.
+4. Un servicio interno accesible solo por localhost sigue siendo explotable si un usuario comprometido puede tunelizarlo por SSH.
 
 ## Remediación
 
@@ -394,3 +415,7 @@ Virtual host staging.silentium.htb
 2. Eliminar cualquier evaluación dinámica insegura en nodos `customMCP` o mecanismos equivalentes de Flowise.
 3. Segregar credenciales entre aplicación, correo y sistema operativo.
 4. Actualizar o aislar Gogs para eliminar la exposición a `CVE-2025-8110` y revisar permisos de uso de tokens API internos.
+
+## Conclusión
+
+HTB Silentium es una máquina de dificultad Fácil que combina la explotación de un flujo inseguro de recuperación de contraseña en Flowise 3.0.5 para tomar control de una cuenta, ejecución remota de código a través de nodos `customMCP`, reutilización de credenciales para acceso SSH, y escalada a root mediante CVE-2025-8110 en Gogs. La lección principal es que un staging mal configurado puede exponer la superficie completa de ataque, y que las credenciales de aplicación nunca deben reutilizarse como credenciales del sistema.

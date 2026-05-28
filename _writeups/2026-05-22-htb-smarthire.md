@@ -44,6 +44,11 @@ Los resultados confirmaron:
 - `22/tcp` — OpenSSH 8.9p1 Ubuntu 3ubuntu0.15
 - `80/tcp` — nginx 1.18.0 con redirección a `http://smarthire.htb/`
 
+Los indicadores más útiles de esta fase fueron:
+
+- **22/tcp** — SSH OpenSSH 8.9p1, acceso remoto si conseguimos credenciales.
+- **80/tcp** — HTTP nginx 1.18.0 con redirección a `smarthire.htb`, obliga a trabajar con virtual host.
+
 El virtual host `smarthire.htb` nos indicaba que debíamos trabajar con nombres de dominio, así que lo agregamos a `/etc/hosts`.
 
 ## Enumeración
@@ -87,6 +92,20 @@ whatweb http://models.smarthire.htb
 El encabezado `WWW-Authenticate[mlflow][Basic]` confirmó que se trataba de un servidor MLflow Tracking con autenticación Basic.
 
 Intentamos acceder a `models.smarthire.htb` con credenciales por defecto como admin:admin, pero el panel rechazó la autenticación. Seguimos explorando la aplicación principal.
+
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en la funcionalidad de subida de archivos CSV de la aplicación SmartHIRE, porque la presencia de un servidor MLflow Tracking en `models.smarthire.htb` sugería que los CSV subidos se usaban para entrenar modelos de ML. En estos escenarios, la deserialización de modelos pickle es un vector de RCE conocido.
+
+El flujo de ataque consistía en: crear un usuario, subir un CSV malicioso que incluyera un pickle contaminado durante el entrenamiento, y disparar la deserialización al hacer una predicción. El exploit de CVE-2024-37054 automatiza exactamente este proceso.
+
+## Investigación de vulnerabilidades
+
+La vulnerabilidad principal que guió la fase de investigación fue:
+
+- **CVE-2024-37054**: Vulnerabilidad de deserialización insegura de pickle en MLflow que permite ejecución remota de código. Al subir un CSV malicioso, el modelo entrenado incluye un pickle contaminado; cuando el servidor lo carga para hacer predicciones, ejecuta el payload del atacante. Esta vulnerabilidad afecta a MLflow cuando permite registro y carga de modelos sin validación del formato de serialización.
+
+Adicionalmente, la escalada se basó en una mala práctica de diseño: un script interno (`mlflowctl.py`) cargaba plugins dinámicamente mediante `site.addsitedir()` desde un directorio donde el usuario `svcweb` tenía permisos de escritura, permitiendo path hijack para ejecución de código como root vía sudo.
 
 ## Explotación
 
@@ -200,6 +219,21 @@ bash-5.1# cat /root/root.txt
 [REDACTED]
 ```
 
+## Cadena de explotación
+
+```text
+SmartHIRE web app
+-> registro de usuario
+-> subida de CSV malicioso
+-> CVE-2024-37054 (MLflow pickle deserialization)
+-> RCE como svcweb
+-> sudo en mlflowctl.py
+-> path hijack vía .pth malicioso en plugins/dev/
+-> mlflow_actions.py con chmod +s /bin/bash
+-> /bin/bash -p
+-> shell como root
+```
+
 ## Flags
 
 | Flag | Valor |
@@ -207,6 +241,20 @@ bash-5.1# cat /root/root.txt
 | `user.txt` | `[REDACTED]` |
 | `root.txt` | `[REDACTED]` |
 
+## Lecciones técnicas
+
+1. La integración de MLflow sin restricciones de serialización permite deserialización insegura de pickle, lo que equivale a RCE sin autenticación si el endpoint de predicción es público.
+2. Los scripts que cargan plugins dinámicamente mediante `site.addsitedir()` desde directorios escribibles por el usuario son vectores de path hijack.
+3. El uso de sudo sin contraseña en scripts que importan módulos dinámicamente permite escalada a root si el usuario puede controlar el path de Python.
+4. La separación de entornos entre la aplicación web y el panel MLflow debe incluir autenticación fuerte y segmentación de red.
+
 ## Conclusión
 
 SmartHire demostró cómo una aplicación web que integra MLflow sin restricciones de serialización puede ser comprometida mediante `CVE-2024-37054` (deserialización de pickle). La escalada a root aprovechó un script interno con plugins cargados dinámicamente vía `site.addsitedir()` y permisos de escritura en el directorio de desarrollo, permitiendo un path hijack que ejecutó código como root a través de sudo.
+
+## Remediación
+
+1. Actualizar MLflow a una versión que parchee CVE-2024-37054 y validar el formato de serialización de modelos antes de cargarlos.
+2. No utilizar `site.addsitedir()` con directorios escribibles por usuarios no privilegiados; usar rutas absolutas y validación de integridad de plugins.
+3. Restringir el uso de sudo a scripts que no realicen importaciones dinámicas o que verifiquen la integridad de los módulos cargados.
+4. Segregar el servidor MLflow Tracking de la aplicación web principal con autenticación fuerte y segmentación de red.

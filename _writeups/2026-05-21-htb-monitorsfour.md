@@ -65,6 +65,19 @@ wfuzz -H "Host: FUZZ.monitorsfour.htb" --hc 404,403 -c --hh 138 -w /usr/share/se
 
 El hallazgo crítico fue el subdominio `cacti.monitorsfour.htb`, que expone una instalación de **Cacti versión 1.2.28**.
 
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en el subdominio `cacti.monitorsfour.htb` porque la versión 1.2.28 de Cacti tiene vulnerabilidades RCE autenticadas conocidas. El endpoint `/user?token=0` encontrado en el sitio principal filtraba información de usuarios sin autenticación, proporcionando nombres de cuenta potenciales para acceder a Cacti.
+
+La presencia de un dump SQL accesible públicamente en la instalación de Cacti permitió obtener hashes de contraseña, y la funcionalidad de subida de plantillas en Cacti proporcionaba el vector para convertir acceso autenticado en ejecución remota de código.
+
+## Investigación de vulnerabilidades
+
+Dos CVEs documentadas guiaron la fase de investigación:
+
+- **CVE-2025-24367**: Vulnerabilidad de RCE autenticada en Cacti que permite a un usuario con acceso al panel subir una plantilla maliciosa que ejecuta código PHP en el servidor, proporcionando una shell en el contenedor web.
+- **CVE-2025-9074**: Vulnerabilidad crítica (CVSS 9.3) en Docker Desktop que expone la Docker API sin autenticación en la subred interna `192.168.65.0/24`, permitiendo a cualquier contenedor Linux crear contenedores privilegiados con montajes del sistema de archivos del host.
+
 ![Panel de login de Cacti 1.2.28](/images/writeups/monitorsfour/Pasted image 20260521120236.png)
 
 Descargamos el dump SQL de Cacti que está accesible públicamente desde la instalación. Los dumps de instalación suelen contener credenciales por defecto que podemos aprovechar si no fueron cambiadas.
@@ -175,15 +188,6 @@ MariaDB [cacti]> SELECT id,username,password FROM user_auth;
 +----+----------+--------------------------------------------------------------+
 ```
 
-## Flags
-
-```bash
-www-data@821fbd6a43fa:~/html/cacti$ cat /home/marcus/user.txt
-[REDACTED]
-```
-
-**Flag de usuario:** `[REDACTED]`
-
 ## Escalada de privilegios
 
 Desde el contenedor no tenemos acceso directo al host Windows, pero podemos explorar la red interna de Docker. Creamos un script que escanea la subred 192.168.65.0/24 buscando la Docker API expuesta sin autenticación en el puerto 2375.
@@ -268,6 +272,43 @@ www-data@821fbd6a43fa:/tmp$ curl http://192.168.65.7:2375/containers/20dd4fc655b
 
 **Flag de root:** `[REDACTED]`
 
+## Cadena de explotación
+
+```text
+Fuzzing de subdominios
+-> cacti.monitorsfour.htb (Cacti 1.2.28)
+-> endpoint /user?token=0 filtra usuarios
+-> credenciales de marcus
+-> CVE-2025-24367 (RCE autenticado en Cacti)
+-> shell como www-data en contenedor
+-> escaneo de subred interna 192.168.65.0/24
+-> Docker API expuesta en 192.168.65.7:2375 (CVE-2025-9074)
+-> contenedor Alpine con montaje del host
+-> lectura de root.txt desde disco del host
+```
+
+## Flags
+
+| Flag | Valor |
+|------|-------|
+| `user.txt` | `[REDACTED]` |
+| `root.txt` | `[REDACTED]` |
+
+## Lecciones técnicas
+
+1. Un endpoint sin autenticación que filtra usuarios puede proporcionar los nombres de cuenta necesarios para ataques de fuerza bruta o reutilización de credenciales en servicios internos.
+2. Los dumps SQL de instalación nunca deben ser accesibles públicamente, ya que contienen hashes y configuraciones por defecto.
+3. La Docker API expuesta sin autenticación en una subred interna equivale a compromiso total del host, ya que cualquier contenedor puede montar el sistema de archivos completo.
+4. Las aplicaciones legacy como Cacti deben actualizarse o aislarse en redes separadas, especialmente cuando manejan credenciales de base de datos.
+
 ## Conclusión
 
 MonitorsFour resultó ser una máquina de dificultad **Fácil** que combinó dos vectores: la explotación de Cacti 1.2.28 mediante **CVE-2025-24367** para obtener acceso a un contenedor web, y el abuso de una **Docker API expuesta sin autenticación** en la red interna para montar el sistema de archivos del host y leer la flag de Administrador. La lección principal es que exponer un panel de Cacti en una versión vulnerable combinado con una API de Docker abierta convierte una intrusión web limitada en compromiso total del sistema.
+
+## Remediación
+
+1. Actualizar Cacti a una versión que parchee CVE-2025-24367 o migrar a una alternativa más segura.
+2. Eliminar el endpoint `/user?token=0` o requerir autenticación para acceder a información de usuarios.
+3. No exponer dumps SQL de instalación en el directorio web público.
+4. Configurar la Docker API para requerir autenticación TLS y no exponerla en subredes accesibles desde contenedores no privilegiados.
+5. Aplicar el parche de seguridad correspondiente a CVE-2025-9074 en Docker Desktop.

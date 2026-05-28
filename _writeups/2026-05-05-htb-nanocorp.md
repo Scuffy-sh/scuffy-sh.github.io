@@ -88,6 +88,21 @@ Usuario identificado inicialmente:
 
 El agente de Checkmk en `6556/tcp` resultó ser una fuente clave de información. El tráfico revelaba sesiones activas para el usuario `NANOCORP\web_svc`.
 
+## Metodología de análisis del vector inicial
+
+El vector de entrada se priorizó en la aplicación web del dominio por ser la superficie más accesible. Sin embargo, la presencia de Checkmk en `6556/tcp` y el tráfico de sesiones activas que exponía sugería que el agente de monitoreo era una fuente de información valiosa.
+
+La hipótesis principal era que las sesiones activas de `web_svc` detectadas en el tráfico de Checkmk podían ser capturadas mediante un ataque NTLM relay. La entrega de un archivo `.library-ms` malicioso a través de la funcionalidad de subida del sitio web podía iniciar la autenticación hacia nuestro servidor SMB controlado.
+
+## Investigación de vulnerabilidades
+
+Dos CVEs documentadas guiaron la fase de investigación:
+
+- **CVE-2025-24054**: Vulnerabilidad de NTLM relay que permite a un atacante capturar el hash NTLMv2 de un usuario de dominio mediante un archivo `.library-ms` malicioso. Cuando la víctima explora la carpeta que contiene el archivo, Windows se autentica contra un recurso SMB remoto controlado por el atacante.
+- **CVE-2024-0670**: Vulnerabilidad en Checkmk Agent 2.1.0p10 que permite ejecución de comandos como SYSTEM mediante el disparo de una reparación de MSI. Durante el proceso de reparación, el instalador ejecuta scripts `.cmd` ubicados en rutas predecibles con privilegios elevados.
+
+Adicionalmente, el análisis con BloodHound reveló una ruta de escalada lateral: `web_svc` podía agregarse al grupo `IT_SUPPORT`, y ese grupo tenía permisos para cambiar la contraseña de `monitoring_svc`.
+
 ## Acceso inicial (CVE-2025-24054: NTLM Relay)
 
 El vector de entrada aprovecha una vulnerabilidad de NTLM relay mediante archivos `.library-ms` maliciosos. Cuando un usuario de Windows explora una carpeta que contiene este archivo, el sistema intenta conectarse a un recurso compartido SMB remoto, entregando un desafío NTLMv2 que puede ser capturado y crackeado.
@@ -427,6 +442,13 @@ Archivo .library-ms malicioso + CVE-2025-24054
 -> ejecución como SYSTEM
 ```
 
+## Flags
+
+| Flag | Valor |
+|------|-------|
+| `user.txt` | `[REDACTED]` |
+| `root.txt` | `df398fa317da91fe096884185fc2edab` |
+
 ## Lecciones técnicas
 
 - Un archivo `.library-ms` en una carpeta compartida puede desencadenar autenticación NTLMv2 sin interacción del usuario, convirtiéndose en un vector de entrada silencioso.
@@ -441,3 +463,7 @@ Archivo .library-ms malicioso + CVE-2025-24054
 3. Revisar y auditar pertenencias a grupos en Active Directory; `IT_SUPPORT` no debe tener privilegios para modificar cuentas de servicio.
 4. Actualizar Checkmk Agent a una versión que no permita ejecución de código durante el proceso de reparación MSI.
 5. Implementar protecciones adicionales como LSA Protection y Credential Guard para limitar el robo de credenciales en memoria.
+
+## Conclusión
+
+HTB NanoCorp es una máquina de dificultad Hard que combina NTLM relay mediante CVE-2025-24054 con un archivo `.library-ms` malicioso para comprometer `web_svc`, enumeración de rutas de escalada con BloodHound para acceder a `monitoring_svc` mediante manipulación de grupos AD, y escalada a SYSTEM explotando CVE-2024-0670 en Checkmk Agent 2.1.0p10 mediante una reparación de MSI con payload `.cmd`. La lección principal es que los agentes de monitoreo y las relaciones de grupos en Active Directory pueden formar cadenas de ataque complejas que herramientas como BloodHound revelan eficazmente.
