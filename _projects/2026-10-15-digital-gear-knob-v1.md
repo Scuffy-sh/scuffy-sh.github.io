@@ -32,9 +32,9 @@ DigitalGearKnob es un proyecto de electrónica embarcada para mostrar y leer la 
 
 ## Evolución
 
-La **v2** evoluciona el enfoque hacia lectura CAN/TWAI con un estimador RPM÷velocidad más robusto, interfaz LVGL y arquitectura dual (NimBLE + app Flutter). Ver entrada **[DigitalGearKnob v2](/projects/2026-10-15-digital-gear-knob-v2/)**.
+La **v2** evoluciona el enfoque hacia lectura CAN/TWAI con un estimador RPM÷velocidad más robusto, interfaz LVGL y arquitectura dual (NimBLE + app Flutter). Ver entrada **[DigitalGearKnob v2](/projects/2026-10-15-digital-gear-knob-v2.html)**.
 
 ## Enlaces
 
 - [Repositorio GitHub](https://github.com/Scuffy-sh/DigitalGearKnob)
-- [DigitalGearKnob v2](/projects/2026-10-15-digital-gear-knob-v2/)
+- [DigitalGearKnob v2](/projects/2026-10-15-digital-gear-knob-v2.html)

@@ -59,9 +59,9 @@ DigitalGearKnob es un proyecto de electrónica embarcada para mostrar y leer la 
 
 ## Relación con v1
 
-La v1 detectaba la marcha por orientación (IMU BNO055 en la palanca) con sus limitaciones de deriva y calibración manual; la v2 elimina esa dependencia leyendo el bus CAN en modo escucha. Ver entrada **[DigitalGearKnob v1](/projects/2026-10-15-digital-gear-knob-v1/)**.
+La v1 detectaba la marcha por orientación (IMU BNO055 en la palanca) con sus limitaciones de deriva y calibración manual; la v2 elimina esa dependencia leyendo el bus CAN en modo escucha. Ver entrada **[DigitalGearKnob v1](/projects/2026-10-15-digital-gear-knob-v1.html)**.
 
 ## Enlaces
 
 - [Repositorio GitHub](https://github.com/Scuffy-sh/DigitalGearKnob)
-- [DigitalGearKnob v1](/projects/2026-10-15-digital-gear-knob-v1/)
+- [DigitalGearKnob v1](/projects/2026-10-15-digital-gear-knob-v1.html)
