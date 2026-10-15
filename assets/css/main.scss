@@ -187,28 +187,40 @@ select option,
 }
 
 // ==========================================================================
-// Projects page — hardware entries stack vertically (one per row)
-// MM floats .grid__item 2-up (and 4-up on wide screens) and clips the
-// teaser to 120px, which chopped the images. Force a single column and
-// show the image at its natural aspect ratio.
+// Projects page — hardware cards stay side by side (2 columns)
+// The theme floats .grid__item, but drops to 4 columns on wide screens and
+// clips the teaser to 120px. Force 2 columns everywhere and show the image
+// at its natural aspect ratio, bounded in height so it does not dominate.
 // ==========================================================================
 
 .entries-grid .grid__item {
-  float: none;
-  clear: both;
-  width: 100%;
+  float: left;
+  width: 48.9795918367%;
   margin-left: 0;
   margin-right: 0;
+  margin-bottom: 2em;
+}
+
+.entries-grid .grid__item:nth-child(2n + 1) {
+  clear: both;
+  margin-left: 0;
+}
+
+.entries-grid .grid__item:nth-child(2n + 2) {
+  clear: none;
+  margin-left: 2.0408163265%;
 }
 
 .entries-grid .grid__item .archive__item-teaser {
   max-height: none;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .entries-grid .grid__item .archive__item-teaser img {
-  width: 100%;
+  display: block;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 360px;
+  margin-left: auto;
+  margin-right: auto;
 }
