@@ -185,3 +185,30 @@ select option,
 .pagination {
   display: none;
 }
+
+// ==========================================================================
+// Projects page — hardware entries stack vertically (one per row)
+// MM floats .grid__item 2-up (and 4-up on wide screens) and clips the
+// teaser to 120px, which chopped the images. Force a single column and
+// show the image at its natural aspect ratio.
+// ==========================================================================
+
+.entries-grid .grid__item {
+  float: none;
+  clear: both;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.entries-grid .grid__item .archive__item-teaser {
+  max-height: none;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.entries-grid .grid__item .archive__item-teaser img {
+  width: 100%;
+  height: auto;
+}

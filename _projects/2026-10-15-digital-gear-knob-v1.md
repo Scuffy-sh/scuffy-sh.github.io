@@ -5,12 +5,10 @@ date: 2026-10-15
 categories: [hardware]
 github_repo: https://github.com/Scuffy-sh/DigitalGearKnob
 header:
-  teaser: https://raw.githubusercontent.com/Scuffy-sh/DigitalGearKnob/main/images/knob-open.jpeg
+  teaser: /images/imu.jpg
 summary: "Prototipo v1: detección de marcha con IMU BNO055 montado en la palanca, calibración por marcha guardada en NVS y limitación de deriva por ángulo de montaje."
 excerpt: "Prototipo v1 con IMU BNO055 montado en la palanca de cambios. La marcha se detecta por orientación; la calibración por marcha persiste en NVS. Queda la deriva por ángulo de montaje como limitación conocida."
 ---
-
-# DigitalGearKnob v1 — Cambio con IMU
 
 ## Resumen
 

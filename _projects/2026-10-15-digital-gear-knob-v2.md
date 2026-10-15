@@ -5,12 +5,10 @@ date: 2026-10-15
 categories: [hardware]
 github_repo: https://github.com/Scuffy-sh/DigitalGearKnob
 header:
-  teaser: https://raw.githubusercontent.com/Scuffy-sh/DigitalGearKnob/main/images/t-display-s3-amoled.jpg
+  teaser: /images/canbus.webp
 summary: "Prototipo v2: lectura directa del bus CAN en modo escucha (TWAI listen-only a 500 kbps) con ESP32-S3 T-Display S3 AMOLED y transceptor SN65HVD230; estimador de marcha RPM÷velocidad con histéresis y debounce, UI LVGL y arquitectura BLE + app Flutter."
 excerpt: "Prototipo v2 que lee el bus CAN del vehículo en modo solo-escucha (TWAI listen-only, 500 kbps) con ESP32-S3 T-Display S3 AMOLED y transceptor SN65HVD230. La marcha se estima con RPM÷velocidad (histéresis, debounce 3×200 ms, reglas N/parado/stale) y se muestra en UI LVGL; BLE NimBLE + app Flutter scuffy para estado en vivo."
 ---
-
-# DigitalGearKnob v2 — Cambio por CAN
 
 ## Resumen
 
