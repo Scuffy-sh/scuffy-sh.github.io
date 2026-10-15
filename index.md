@@ -9,9 +9,9 @@ Este portafolio recoge una selección de proyectos desarrollados en distintas á
 
 ---
 
-### [Proyectos ML/DL](/projects/)
+### [Proyectos](/projects/)
 
-En el apartado de Proyectos, se incluyen implementaciones de modelos de Machine Learning y Deep Learning, donde se exploran distintas técnicas de aprendizaje supervisado y profundo aplicadas a problemas reales, junto con su análisis, evaluación y resultados.
+En el apartado de Proyectos, se incluyen implementaciones de modelos de Machine Learning y Deep Learning —donde se exploran distintas técnicas de aprendizaje supervisado y profundo aplicadas a problemas reales, junto con su análisis, evaluación y resultados— y proyectos de hardware / embedded, presentados en una página única con sus dos secciones.
 
 [**Ver proyectos →**](/projects/)
 
