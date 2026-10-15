@@ -213,14 +213,16 @@ select option,
 
 .entries-grid .grid__item .archive__item-teaser {
   max-height: none;
+  width: 240px;
+  max-width: 100%;
+  height: 240px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .entries-grid .grid__item .archive__item-teaser img {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 360px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
