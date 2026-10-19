@@ -1,0 +1,71 @@
+// ==========================================================================
+// Site layout — slice 2a (de-floated shell + sticky masthead)
+//
+// Imported from assets/css/main.scss AFTER the theme import (and after
+// `custom/tokens`), so every rule below compiles after the upstream
+// Minimal Mistakes rules it neutralizes. None of the overridden upstream
+// declarations use `!important`, so equal specificity + later source
+// order wins everywhere — no `!important` is added in this file.
+//
+// The shell rule is UNCONDITIONAL on purpose: the theme floats `.page`
+// right and subtracts a 200px / 300px sidebar gutter at >= 64em / 80em,
+// but this site never renders a sidebar (no page declares `sidebar:` or
+// `author_profile`). The previous fix was scoped to a `wide`-only patch,
+// which only the 14 writeups declare, so `/`, `/projects/` and
+// `/writeups/` kept a phantom 200-300px right gutter. Fixed once, for
+// every page — the shell no longer depends on a per-page front-matter
+// flag (R3).
+// ==========================================================================
+
+// --- Shell — full width on every page (task 2a.1) -------------------------
+.page {
+  float: none;
+  width: 100%;
+  max-width: none;
+  padding-right: 0;
+}
+
+// --- De-float the shell where upstream floats it (task 2a.2) --------------
+// Selectors mirror upstream's nesting so specificity matches exactly;
+// source order alone then decides the cascade. `.initial-content` is NOT
+// floated upstream (`flex: 1 0 auto` in the body flex column) — there is
+// nothing to override there. The `.entries-grid` floats are owned by
+// slice 2b and are deliberately untouched here; `.page__meta`,
+// `.page__share` and `.page__comments` keep their upstream float-left +
+// full-width + clear-both stack, which also clears them below the float
+// block until 2b converts it.
+.page .page__inner-wrap {
+  float: none;
+}
+
+.page .page__inner-wrap .page__content {
+  float: none;
+}
+
+.page__footer {
+  float: none;
+}
+
+// --- Sticky masthead (task 2a.2) ------------------------------------------
+// Upstream only sets `position: relative` on `.masthead` (no
+// `!important`), so plain source order wins. The `-webkit-sticky`
+// declaration comes first to match the theme's vendor-prefixing
+// convention (cf. its upstream `.sticky` rules).
+//
+// `top: 0` pins the masthead flush with the viewport edge: it is the
+// first visual element of <body>, so the sticky offset carries no
+// length. `$nav-height` (2.5rem) is a HEIGHT token — it drives
+// `.greedy-nav`'s `min-height` — and is consumed here as the masthead's
+// `min-height` floor so the stuck header and the nav rhythm agree
+// without introducing a second hardcoded length.
+// The upstream `intro` animation only animates opacity, so it cannot
+// detach sticky positioning (the reduced-motion guard for it is slice 4).
+.masthead {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  min-height: $nav-height;
+  z-index: 20;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}

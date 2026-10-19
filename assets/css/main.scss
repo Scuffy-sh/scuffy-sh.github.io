@@ -72,6 +72,7 @@ $type-size-8: 0.6875em;
 // an additive :root override with no rule rewrites (R7). Light mode itself is
 // out of scope: no color-scheme media query ships in this change (R6).
 @import "custom/tokens";
+@import "custom/layout";
 
 // ==========================================================================
 // Custom overrides
@@ -147,13 +148,8 @@ select option,
   color: var(--color-text) !important;
 }
 
-// Page centering — MM's .page uses float:right + asymmetric width calc.
-// When there's no sidebar (classes: wide), this causes a left offset.
-.wide .page {
-  width: 100%;
-  float: none;
-  padding-right: 0;
-}
+// Page shell centering: the old `wide`-scoped patch was removed in slice 2a
+// — the shell rule is now unconditional in _sass/custom/_layout.scss.
 
 // ==========================================================================
 // Writeup cards — redesigned listing
