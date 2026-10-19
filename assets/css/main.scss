@@ -6,11 +6,72 @@
 // Dark skin (must come before theme so the theme picks up the variable overrides)
 @import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}";
 
-// Variable overrides (must come before theme so components use the new values)
+// ==========================================================================
+// Slice 1 — Sass !default overrides (token layer, build-time knobs)
+// These MUST stay after the skin import and BEFORE `@import "minimal-mistakes"`:
+// the theme resolves every !default at import time, so an override placed
+// after the theme import would be silently ignored.
+// ==========================================================================
+
+// Palette — exactly ONE accent hue: #26c6da (recalibrated cyan, same hue
+// family as the previous accent — no second accent introduced).
+$primary-color: #26c6da;
+$link-color: #26c6da;
+$link-color-hover: #4fd1c5;
+$text-color: #e6e6e6;
+$muted-text-color: #9aa0a6;
+$border-color: #2a2f3a;
+$masthead-link-color: #e6e6e6;
+$focus-color: rgba(38, 198, 218, 0.45);
+$background-color: #0f1115;
+$footer-background-color: #0a0c0e;
+
+// Shape + elevation (radius scale 4/8/12/16 -> 8 is the base radius)
+$border-radius: 8px;
+$box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+// Motion — value mirrors the runtime token `--duration-base` (200ms)
+$global-transition: all 200ms ease-in-out;
+
+// Navigation rhythm (airy density)
+$nav-height: 2.5rem;
 $max-width: 1600px;
+
+// Typography — system font stack ONLY: no web fonts, no external font
+// URLs, zero new network requests (R2).
+$global-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+  "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif,
+  "Apple Color Emoji", "Segoe UI Emoji";
+
+// Headline scale (consumed by h1-h6 in the theme; slice 4 later makes h1/h2
+// fluid, inside these same bounds)
+$h-size-1: 1.875rem;
+$h-size-2: 1.5rem;
+$h-size-3: 1.25rem;
+$h-size-4: 1.125rem;
+$h-size-5: 1.0625rem;
+$h-size-6: 1rem;
+
+// Body/caption scale
+$type-size-1: 2.125em;
+$type-size-2: 1.75em;
+$type-size-3: 1.375em;
+$type-size-4: 1.1875em;
+$type-size-5: 1em;
+$type-size-6: 0.8125em;
+$type-size-7: 0.75em;
+$type-size-8: 0.6875em;
 
 // Main theme
 @import "minimal-mistakes";
+
+// Runtime tokens (CSS custom properties) — one :root block AFTER the theme
+// import. Sass variables above are build-time knobs for theme rules; the
+// custom properties below are runtime tokens consumed by site-authored rules.
+// All color roles live in that single :root block, so a future light mode is
+// an additive :root override with no rule rewrites (R7). Light mode itself is
+// out of scope: no color-scheme media query ships in this change (R6).
+@import "custom/tokens";
 
 // ==========================================================================
 // Custom overrides
@@ -23,7 +84,7 @@ $max-width: 1600px;
 .site-subtitle {
   display: block;
   font-size: 0.75em !important;
-  color: #7c7c7c !important;
+  color: var(--color-text-muted) !important;
   font-weight: 400 !important;
   margin: 0;
   line-height: 1.2;
@@ -34,7 +95,7 @@ $max-width: 1600px;
   display: none;
 }
 .info-table {
-  margin-bottom: 1em;
+  margin-bottom: var(--space-3);
 }
 .info-table td:first-child {
   font-weight: bold;
@@ -45,8 +106,8 @@ $max-width: 1600px;
 // Writeup listing page — filters and items
 .writeups-filters {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
 }
 
@@ -54,19 +115,19 @@ $max-width: 1600px;
   flex: 1;
   min-width: 150px;
   padding: 0.375rem 0.5rem;
-  border: 1px solid #555;
-  border-radius: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   background: transparent;
 }
 
 .filter-select {
   padding: 0.375rem 0.5rem;
-  border: 1px solid #555;
-  border-radius: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
-  background: #2d2d2d;
-  color: #eaeaea;
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 // Dark headings — targeting the correct wrapper class with a strong visible color
@@ -74,7 +135,7 @@ $max-width: 1600px;
 .page__content h2,
 .page__content h3,
 .page__content h4 {
-  color: #00bcd4;
+  color: var(--color-accent);
 }
 
 // Select/option dark mode — ensure dropdowns render dark everywhere
@@ -82,8 +143,8 @@ select,
 select option,
 .filter-select,
 .filter-select option {
-  background-color: #2d2d2d !important;
-  color: #eaeaea !important;
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
 }
 
 // Page centering — MM's .page uses float:right + asymmetric width calc.
@@ -99,30 +160,30 @@ select option,
 // ==========================================================================
 
 .writeup-card {
-  border: 1px solid #444;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 1.2em;
-  margin-bottom: 1em;
-  background: #1e1e1e;
-  transition: border-color 0.2s;
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+  transition: border-color var(--duration-base);
 }
 
 .writeup-card:hover {
-  border-color: #00bcd4;
+  border-color: var(--color-accent);
 }
 
 .writeup-card__title {
-  margin: 0 0 0.5em;
+  margin: 0 0 var(--space-1);
   font-size: 1.2em;
 }
 
 .writeup-card__title a {
-  color: #eaeaea;
+  color: var(--color-text);
   text-decoration: none;
 }
 
 .writeup-card__title a:hover {
-  color: #00bcd4;
+  color: var(--color-accent);
 }
 
 .writeup-card__meta {
@@ -130,7 +191,7 @@ select option,
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5em;
+  gap: var(--space-1);
 }
 
 .writeup-card__tags {
@@ -141,11 +202,11 @@ select option,
 
 .writeup-card__tag {
   background: transparent;
-  border: 1px solid #555;
-  border-radius: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   padding: 2px 8px;
   font-size: 0.78em;
-  color: #ccc;
+  color: var(--color-text-muted);
 }
 
 .writeup-card__info-line {
@@ -153,18 +214,18 @@ select option,
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: 0.5em;
+  margin-top: var(--space-1);
 }
 
 .writeup-card__meta-info {
   font-size: 0.75em;
-  color: #888;
+  color: var(--color-text-faint);
   white-space: nowrap;
 }
 
 .writeup-card__date {
   font-size: 0.75em;
-  color: #888;
+  color: var(--color-text-faint);
   white-space: nowrap;
 }
 
@@ -174,7 +235,7 @@ select option,
 
 .site-logo img {
   border-radius: 50%;
-  border: 2px solid rgba(37, 42, 52, 0.55);
+  border: 2px solid var(--color-logo-ring);
 }
 
 // Hide footer elements on writeup pages
@@ -193,6 +254,7 @@ select option,
 // an identical 240x240 teaser box so the two images match in size; the image
 // uses object-fit: cover, so an asset whose ratio is not 1:1 is center
 // cropped.
+// (Float layout + teaser contract: owned by slice 2b — untouched in slice 1.)
 // ==========================================================================
 
 .entries-grid .grid__item {

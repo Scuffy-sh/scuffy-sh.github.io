@@ -1,0 +1,92 @@
+// ==========================================================================
+// Site design tokens — slice 1 (token layer)
+//
+// Imported from assets/css/main.scss IMMEDIATELY AFTER `@import
+// "minimal-mistakes"`, so this :root block sits after the theme in the
+// cascade. Two token layers exist on purpose:
+//   - Sass !default overrides (before the theme import) = build-time knobs
+//     for theme rules that read Sass variables;
+//   - the CSS custom properties below = runtime tokens consumed by
+//     site-authored rules.
+//
+// R7 (light-mode forward compatibility): every color role lives in this one
+// :root block, so adding a light theme later is an additive :root override
+// (~30 lines) with no rule rewrites. Light mode is out of scope for this
+// change — no color-scheme media query ships (dark-only, R6).
+// ==========================================================================
+
+:root {
+  color-scheme: dark;
+
+  // Neutral ramp (dark)
+  --color-bg: #0f1115;
+  --color-surface: #15181d;
+  --color-surface-2: #1b1f26;
+  --color-border: #2a2f3a;
+  --color-border-strong: #5a616e;
+  --color-text: #e6e6e6;
+  --color-text-muted: #9aa0a6;
+  --color-text-faint: #7d848e;
+
+  // Single accent — recalibrated cyan, same hue family as the old accent.
+  // This is the ONLY accent hue in the palette (R1).
+  --color-accent: #26c6da;
+  --color-link: var(--color-accent);
+  --color-link-hover: #4fd1c5;
+  --color-focus: rgba(38, 198, 218, 0.45);
+
+  // Supporting surfaces
+  --color-footer: #0a0c0e;
+  --color-logo-ring: rgba(37, 42, 52, 0.55);
+
+  // Spacing scale (airy density)
+  --space-1: 0.5rem;
+  --space-2: 0.75rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 2.5rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  // Radius scale
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  // Elevation
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  // Motion
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --ease-standard: ease-in-out;
+
+  // Layout + type
+  --measure: 70ch;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+// --------------------------------------------------------------------------
+// Typography baseline (R2): system stack on body, airy rhythm (line-height
+// 1.6 overrides the theme's 1.5), reading measure inside the 65-75ch window.
+// --------------------------------------------------------------------------
+body {
+  font-family: var(--font-family);
+  line-height: 1.6;
+}
+
+.page__content p,
+.page__content li,
+.page__content blockquote {
+  max-width: 70ch;
+  margin-left: auto;
+  margin-right: auto;
+}
