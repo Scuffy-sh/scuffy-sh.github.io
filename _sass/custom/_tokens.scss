@@ -34,6 +34,11 @@
   --color-link: var(--color-accent);
   --color-link-hover: #4fd1c5;
   --color-focus: rgba(38, 198, 218, 0.45);
+  // Ink for text ON the accent background (slice 3, button contrast):
+  // the theme's YIQ mixin picks white for the accent (2.06:1, below AA);
+  // this very-dark cyan ink reaches 7.98:1 on the accent and 5.14:1 on
+  // the theme's hover mix. Same hue family — not a second accent.
+  --color-on-accent: #0b2229;
 
   // Supporting surfaces
   --color-footer: #0a0c0e;

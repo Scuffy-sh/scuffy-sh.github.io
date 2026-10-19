@@ -1,0 +1,226 @@
+// ==========================================================================
+// Site components — slice 3 (docs-minimal component pass)
+//
+// Imported from main.scss AFTER the theme import and after `custom/tokens`
+// / `custom/layout`, at the position of the rules relocated from main.scss.
+// Every upstream rule overridden here was verified against pinned 4.24.0
+// source AND the deployed CSS: no overridden property carries a forced
+// declaration upstream, so equal specificity + later source order wins.
+// This file ships ZERO forced declarations.
+//
+// Direction (R5): hairline borders, generous whitespace, restrained hover.
+// ==========================================================================
+
+// --- Headings -------------------------------------------------------------
+// Upstream compiles no `color` on h1-h6 (only margin/size/weight) and none
+// forced, so the accent rule wins by source order at (0,1,1). The h2
+// hairline already ships upstream; extend the same treatment to h3/h4.
+.page__content h1,
+.page__content h2,
+.page__content h3,
+.page__content h4 {
+  color: var(--color-accent);
+}
+
+.page__content h3,
+.page__content h4 {
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+// --- Info table (key-value metadata on writeups) --------------------------
+// `.info-table` is SITE-OWNED (kramdown IAL on 14 writeups; upstream ships
+// no such selector). thead stays hidden: the header row is structural.
+.info-table thead {
+  display: none;
+}
+
+.info-table {
+  margin-bottom: var(--space-4);
+}
+
+// Upstream `td` sets the same border property at (0,0,1) with a darkened
+// mix and nothing forced — the (0,1,1) site rule wins by source order.
+.info-table td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.info-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.info-table td:first-child {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+// --- Writeup filters (search + selects on /writeups/) ---------------------
+.writeups-filters {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 150px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: transparent;
+  transition: border-color var(--duration-fast);
+}
+
+// Restrained hover: the hairline lifts one step, nothing else moves.
+.search-input:hover {
+  border-color: var(--color-text-faint);
+}
+
+.filter-select {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  transition: border-color var(--duration-fast);
+}
+
+.filter-select:hover {
+  border-color: var(--color-text-faint);
+}
+
+// Forced-dark selects + options (relocated from main.scss, task 3.3).
+// Upstream hardcodes a white `select` background literal the token layer
+// cannot reach, so a site override IS required; the stale part was the
+// forced-declaration flags (upstream declares none on these properties).
+select,
+select option,
+.filter-select,
+.filter-select option {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+// --- Buttons (YIQ contrast correction — OWNER VETO FLAG) ------------------
+// The theme's `yiq-contrasted` mixin picks a WHITE label on the accent
+// background: the deployed primary button is 2.06:1, below WCAG AA (4.5:1).
+// The fix is a dark tokenized label (--color-on-accent: 7.98:1 on the
+// accent, 5.14:1 on the theme's hover mix) — the accent background/hue is
+// untouched. `:visited` and `:hover` are listed because upstream re-declares
+// the white label on those variants at (0,2,0), outranking the base rule.
+// No primary button exists in content today; this pre-corrects the palette.
+.btn--primary,
+.btn--primary:visited,
+.btn--primary:hover {
+  color: var(--color-on-accent);
+}
+
+// --- Writeup list + empty state (task 3.2) --------------------------------
+// Baseline: zero site/upstream rules on either class (R5). The list becomes
+// a flex column so rhythm comes from one mechanism (gap).
+.writeups-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+// Shown by the filter JS (inline display toggle — no conflict here).
+.no-results {
+  margin: var(--space-4) 0;
+  padding: var(--space-5) var(--space-4);
+  color: var(--color-text-muted);
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+// --- Writeup cards (relocated from main.scss, tokenized spacing) ----------
+.writeup-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: 0; // rhythm comes from the .writeups-list flex gap
+  background: var(--color-surface);
+  transition: border-color var(--duration-base);
+}
+
+// Restrained hover: the hairline picks up the accent — no lift, no shadow.
+.writeup-card:hover {
+  border-color: var(--color-accent);
+}
+
+.writeup-card__title {
+  margin: 0 0 var(--space-1);
+  font-size: 1.2em;
+}
+
+.writeup-card__title a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.writeup-card__title a:hover {
+  color: var(--color-accent);
+}
+
+.writeup-card__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.writeup-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+// Pills: hairline border, muted ink, generous horizontal padding.
+.writeup-card__tag {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.78em;
+  color: var(--color-text-muted);
+}
+
+.writeup-card__info-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
+.writeup-card__meta-info {
+  font-size: 0.75em;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+.writeup-card__date {
+  font-size: 0.75em;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+// --- Archive items (list view only) ---------------------------------------
+// `.archive__item` serves both ML list rows and the slice-2b grid cards, so
+// the hairline treatment is scoped to `.list__item` (upstream ships no such
+// child rule); the grid cards keep their slice-2b presentation untouched.
+.list__item .archive__item {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.list__item:last-child .archive__item {
+  border-bottom: 0;
+}
