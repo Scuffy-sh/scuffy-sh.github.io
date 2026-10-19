@@ -244,45 +244,17 @@ select option,
 }
 
 // ==========================================================================
-// Projects page — hardware cards stay side by side (2 columns)
-// The theme floats .grid__item, but drops to 4 columns on wide screens and
-// clips the teaser to 120px. Force 2 columns everywhere and give both cards
-// an identical 240x240 teaser box so the two images match in size; the image
-// uses object-fit: cover, so an asset whose ratio is not 1:1 is center
-// cropped.
-// (Float layout + teaser contract: owned by slice 2b — untouched in slice 1.)
+// Projects page — hardware cards: fixed 2-column CSS Grid (slice 2b)
+// The theme floats .grid__item and switches to 4 columns on wide screens,
+// which with only two entries leaves half a row empty. The grid keeps
+// exactly 2 columns at EVERY viewport width and gives both cards an
+// identical 240x240 teaser box; the image uses object-fit: cover, so an
+// asset whose ratio is not 1:1 is center cropped.
+//
+// The rules live in _sass/custom/_grid.scss. This import sits at the exact
+// position of the former float block — after the theme import and after
+// the `.site-title` marker — so the grid rules compile inside the
+// site-authored block used for verification, and after every upstream
+// `.grid__item` rule they neutralize.
 // ==========================================================================
-
-.entries-grid .grid__item {
-  float: left;
-  width: 48.9795918367%;
-  margin-left: 0;
-  margin-right: 0;
-  margin-bottom: 2em;
-}
-
-.entries-grid .grid__item:nth-child(2n + 1) {
-  clear: both;
-  margin-left: 0;
-}
-
-.entries-grid .grid__item:nth-child(2n + 2) {
-  clear: none;
-  margin-left: 2.0408163265%;
-}
-
-.entries-grid .grid__item .archive__item-teaser {
-  max-height: none;
-  width: 240px;
-  max-width: 100%;
-  height: 240px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.entries-grid .grid__item .archive__item-teaser img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+@import "custom/grid";

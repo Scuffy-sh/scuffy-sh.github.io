@@ -29,11 +29,12 @@
 // Selectors mirror upstream's nesting so specificity matches exactly;
 // source order alone then decides the cascade. `.initial-content` is NOT
 // floated upstream (`flex: 1 0 auto` in the body flex column) — there is
-// nothing to override there. The `.entries-grid` floats are owned by
-// slice 2b and are deliberately untouched here; `.page__meta`,
-// `.page__share` and `.page__comments` keep their upstream float-left +
-// full-width + clear-both stack, which also clears them below the float
-// block until 2b converts it.
+// nothing to override there. `.entries-grid` is now a CSS Grid container
+// owned by slice 2b (`custom/_grid.scss`), so site-authored floats are
+// gone and the containment caveat no longer applies: a grid container
+// contains its own items and the upstream `float: left` on `.grid__item`
+// is inert inside it. `.page__meta`, `.page__share` and `.page__comments`
+// keep their upstream float-left + full-width + clear-both stack.
 .page .page__inner-wrap {
   float: none;
 }
