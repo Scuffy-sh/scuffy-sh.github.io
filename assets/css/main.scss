@@ -139,3 +139,13 @@ $type-size-8: 0.6875em;
 // `.grid__item` rule they neutralize.
 // ==========================================================================
 @import "custom/grid";
+
+// ==========================================================================
+// Motion + accessibility — reduced-motion guard, focus ring, fluid headings
+// (slice 4). Imported LAST on purpose: the focus-ring rules must compile
+// after every upstream `outline: 0` patch and after every earlier site
+// partial so equal specificity + later source order wins. This import sits
+// after the `.site-title` marker, so its rules land inside the site-authored
+// block used by verification.
+// ==========================================================================
+@import "custom/motion-a11y";
