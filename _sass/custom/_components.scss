@@ -216,11 +216,38 @@ select option,
 // `.archive__item` serves both ML list rows and the slice-2b grid cards, so
 // the hairline treatment is scoped to `.list__item` (upstream ships no such
 // child rule); the grid cards keep their slice-2b presentation untouched.
+// Tightened spacing: title closer to description, less vertical air.
 .list__item .archive__item {
-  padding: var(--space-3) 0;
+  padding: var(--space-2) 0 var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 
 .list__item:last-child .archive__item {
   border-bottom: 0;
+}
+
+.archive__item-title {
+  margin: 0 0 var(--space-1);
+  line-height: 1.25;
+}
+
+.archive__item-excerpt {
+  margin: 0;
+  line-height: 1.6;
+}
+
+// --- Inicio / landing: align section titles with their description ---
+.page__content > h3 {
+  display: inline-flex;
+  align-items: center;
+  margin: var(--space-4) 0 var(--space-2);
+  line-height: 1.3;
+}
+
+.page__content > h3 + p {
+  margin-top: 0;
+}
+
+.page__content > hr + h3 {
+  margin-top: var(--space-5);
 }

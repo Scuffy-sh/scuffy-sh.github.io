@@ -49,6 +49,23 @@
   margin: 0;
 }
 
+// Center title vertically/aligned with the teaser image in the hardware grid
+.entries-grid .grid__item .archive__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.entries-grid .grid__item .archive__item-teaser {
+  margin: 0 auto var(--space-2);
+}
+
+.entries-grid .grid__item .archive__item-title {
+  margin: 0;
+  text-align: center;
+}
+
 // --- Teaser contract — unchanged, declaration for declaration (R4) --------
 // Both cards render the identical 240x240 rectangle: the box centers in
 // its track (`margin` auto) and the image is center-cropped
