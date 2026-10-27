@@ -22,6 +22,22 @@
   color: var(--color-accent);
 }
 
+.page__content h1 {
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+}
+
+.page__content h2 {
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+}
+
+.page__content h3 {
+  font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+}
+
+.page__content h4 {
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+}
+
 .page__content h3,
 .page__content h4 {
   padding-bottom: 0.5em;
@@ -235,6 +251,7 @@ select option,
 .archive__item-title {
   margin: 0 0 var(--space-1);
   line-height: 1.25;
+  font-size: 1.05rem;
 }
 
 .archive__item-title a {
@@ -254,11 +271,11 @@ select option,
 .home-section {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.25rem, 2vw, 1.4rem);
+  gap: clamp(1rem, 1.5vw, 1.25rem);
   align-items: flex-start;
   text-align: left;
-  max-width: 900px;
-  margin: 0 auto clamp(3rem, 8vw, 4rem) auto;
+  max-width: 800px;
+  margin: 0 auto clamp(2.5rem, 6vw, 3.5rem) auto;
 }
 
 .home-section:last-of-type {
@@ -267,8 +284,8 @@ select option,
 
 .home-section__title {
   margin: 0;
-  font-size: clamp(1.6rem, 2.2vw, 2.5rem);
-  line-height: 1.2;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.25;
   color: var(--color-accent);
   max-width: 100%;
 }
@@ -284,8 +301,8 @@ select option,
 
 .home-section__text {
   margin: 0;
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.7;
   color: var(--color-text);
   max-width: 100%;
 }
