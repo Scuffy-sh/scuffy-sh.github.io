@@ -59,11 +59,30 @@
 
 .entries-grid .grid__item .archive__item-teaser {
   margin: 0 auto var(--space-2);
+  overflow: hidden;
+}
+
+.entries-grid .grid__item .archive__item-teaser img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease;
+  will-change: transform;
+}
+
+.entries-grid .grid__item:hover .archive__item-teaser img {
+  transform: scale(1.03);
 }
 
 .entries-grid .grid__item .archive__item-title {
   margin: 0;
   text-align: center;
+  transition: color 200ms ease;
+}
+
+.entries-grid .grid__item:hover .archive__item-title {
+  color: var(--color-accent);
 }
 
 // --- Teaser contract — unchanged, declaration for declaration (R4) --------
