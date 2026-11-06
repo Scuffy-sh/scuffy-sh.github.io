@@ -107,6 +107,16 @@
   margin: 0 !important;
 }
 
+.page__content code,
+.page__content pre,
+.page__content kbd,
+.page__content samp,
+.page__content tt,
+.page__content .highlight,
+.page__content .highlighter-rouge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
 .page__content img,
 .page__content figure img {
   display: block;
