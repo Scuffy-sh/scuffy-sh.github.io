@@ -87,6 +87,12 @@
 .page__content .highlight {
   margin-top: 1.75em !important;
   margin-bottom: 2.25em !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: 70ch;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
 
 .page__content img,
