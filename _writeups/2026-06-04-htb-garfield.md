@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Garfield - Writeup"
+title: "HTB Garfield - Writeup"
 date: 2026-06-04
 difficulty: Difícil
-operating_system: Windows
+operating_system: Windows
+platform: HTB
 tags:
   - HTB
   - Windows

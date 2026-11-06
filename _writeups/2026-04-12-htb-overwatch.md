@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Overwatch - Writeup"
+title: "HTB Overwatch - Writeup"
 date: 2026-04-12
 difficulty: Medio
-operating_system: Windows
+operating_system: Windows
+platform: HTB
 service_hint: Active Directory + SMB anónimo + MSSQL linked server + SOAP interno
 tags:
   - Active Directory

@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "MonitorsFour - Writeup"
+title: "HTB MonitorsFour - Writeup"
 date: 2026-05-21
 difficulty: Fácil
-operating_system: Windows
+operating_system: Windows
+platform: HTB
 service_hint: Cacti + CVE-2025-24367 + Docker API
 tags:
   - CVE-2025-24367

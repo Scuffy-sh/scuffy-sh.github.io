@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Kobold - Writeup"
+title: "HTB Kobold - Writeup"
 date: 2026-04-10
 difficulty: Fácil
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 service_hint: MCP Jam API + PrivateBin + Arcane
 tags:
   - RCE

@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "VariaType - Writeup"
+title: "HTB VariaType - Writeup"
 date: 2026-04-17
 difficulty: Medio
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 service_hint: Portal PHP + Git exposed + Variable Font Generator
 tags:
   - Virtual Host

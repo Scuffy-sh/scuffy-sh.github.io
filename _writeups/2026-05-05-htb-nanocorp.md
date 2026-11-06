@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "NanoCorp - Writeup"
+title: "HTB NanoCorp - Writeup"
 date: 2026-05-05
 difficulty: Difícil
-operating_system: Windows
+operating_system: Windows
+platform: HTB
 service_hint: Active Directory + NTLM Relay + Checkmk + MSI Repair
 tags:
   - Active Directory

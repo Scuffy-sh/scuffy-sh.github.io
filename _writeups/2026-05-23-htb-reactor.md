@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Reactor - Writeup"
+title: "HTB Reactor - Writeup"
 date: 2026-05-23
 difficulty: Fácil
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 tags:
   - HTB
   - Linux

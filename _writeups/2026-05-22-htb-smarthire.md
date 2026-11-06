@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "SmartHire - Writeup"
+title: "HTB SmartHire - Writeup"
 date: 2026-05-22
 difficulty: Medio
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 tags:
   - HTB
   - Linux

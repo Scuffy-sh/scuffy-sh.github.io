@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Silentium - Writeup"
+title: "HTB Silentium - Writeup"
 date: 2026-04-16
 difficulty: Fácil
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 service_hint: Flowise 3.0.5 + Gogs interno
 tags:
   - Virtual Host

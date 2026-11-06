@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "DevHub - Writeup"
+title: "HTB DevHub - Writeup"
 date: 2026-06-03
 difficulty: Medio
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 tags:
   - HTB
   - Linux

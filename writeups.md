@@ -6,6 +6,11 @@ permalink: /writeups/
 
 <div class="writeups-filters">
   <input type="text" id="writeup-search" placeholder="Buscar..." class="search-input">
+  <select id="platform-filter" class="filter-select">
+    <option value="">Plataforma</option>
+    <option value="htb">HTB</option>
+    <option value="thm">THM</option>
+  </select>
   <select id="difficulty-filter" class="filter-select">
     <option value="">Dificultad</option>
     <option value="fácil">Fácil</option>
@@ -20,12 +25,14 @@ permalink: /writeups/
 </div>
 
 <div class="writeups-list" id="writeups-list">
-{% for writeup in site.writeups reversed %}
+{% assign sorted_writeups = site.writeups | sort: 'date' | reverse %}
+{% for writeup in sorted_writeups %}
   <article class="writeup-card"
        data-title="{{ writeup.title | downcase }}"
        data-tags="{{ writeup.tags | join: ' ' | downcase }}"
        data-difficulty="{{ writeup.difficulty | downcase }}"
-       data-os="{{ writeup.operating_system | downcase }}">
+       data-os="{{ writeup.operating_system | downcase }}"
+       data-platform="{{ writeup.platform | default: 'HTB' | downcase }}">
     <div class="writeup-card__header">
       <h2 class="writeup-card__title">
         <a href="{{ writeup.url | relative_url }}">{{ writeup.title | remove: " - Writeup" }}</a>
@@ -34,13 +41,13 @@ permalink: /writeups/
     <div class="writeup-card__meta">
       <div class="writeup-card__tags">
         {% for tag in writeup.tags %}
-          {% unless tag == "HTB" or tag == writeup.difficulty or tag == writeup.operating_system %}
+          {% unless tag == "HTB" or tag == "THM" or tag == writeup.difficulty or tag == writeup.operating_system %}
         <span class="writeup-card__tag">{{ tag }}</span>
           {% endunless %}
         {% endfor %}
       </div>
       <div class="writeup-card__info-line">
-        <span class="writeup-card__meta-info">{{ writeup.difficulty }} · {{ writeup.operating_system }} · HackTheBox</span>
+        <span class="writeup-card__meta-info">{{ writeup.difficulty }} · {{ writeup.operating_system }} · {{ writeup.platform | default: "HTB" }}</span>
         <time class="writeup-card__date" datetime="{{ writeup.date | date_to_xmlschema }}">{{ writeup.date | date: "%d/%m/%Y" }}</time>
       </div>
     </div>
@@ -55,6 +62,7 @@ permalink: /writeups/
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   var searchInput = document.getElementById('writeup-search');
+  var platformFilter = document.getElementById('platform-filter');
   var difficultyFilter = document.getElementById('difficulty-filter');
   var osFilter = document.getElementById('os-filter');
   var writeupCards = document.querySelectorAll('.writeup-card');
@@ -62,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function filterWriteups() {
     var searchTerm = searchInput.value.toLowerCase();
+    var platform = platformFilter.value.toLowerCase();
     var difficulty = difficultyFilter.value.toLowerCase();
     var os = osFilter.value.toLowerCase();
     var visibleCount = 0;
@@ -69,14 +78,16 @@ document.addEventListener('DOMContentLoaded', function() {
     writeupCards.forEach(function(card) {
       var title = card.dataset.title;
       var tags = card.dataset.tags || '';
+      var itemPlatform = card.dataset.platform || '';
       var itemDifficulty = card.dataset.difficulty || '';
       var itemOs = card.dataset.os || '';
 
       var matchesSearch = !searchTerm || title.indexOf(searchTerm) !== -1 || tags.indexOf(searchTerm) !== -1;
+      var matchesPlatform = !platform || itemPlatform === platform;
       var matchesDifficulty = !difficulty || itemDifficulty === difficulty;
       var matchesOs = !os || itemOs.indexOf(os) !== -1;
 
-      if (matchesSearch && matchesDifficulty && matchesOs) {
+      if (matchesSearch && matchesPlatform && matchesDifficulty && matchesOs) {
         card.style.display = '';
         visibleCount++;
       } else {
@@ -88,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   searchInput.addEventListener('input', filterWriteups);
+  platformFilter.addEventListener('change', filterWriteups);
   difficultyFilter.addEventListener('change', filterWriteups);
   osFilter.addEventListener('change', filterWriteups);
 });

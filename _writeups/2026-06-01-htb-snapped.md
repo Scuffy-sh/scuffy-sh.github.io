@@ -1,10 +1,11 @@
 ---
 layout: single
 classes: wide
-title: "Snapped - Writeup"
+title: "HTB Snapped - Writeup"
 date: 2026-06-01
 difficulty: Difícil
-operating_system: Linux
+operating_system: Linux
+platform: HTB
 tags:
   - HTB
   - Linux
