@@ -47,38 +47,75 @@
 // --- Page content readability (writeups / articles) -----------------------
 // More breathing room and explicit left alignment so long-form content
 // (especially writeups) doesn't feel compacted or visually centered.
-.page__content {
-  text-align: left;
+.page__content,
+.page__content p,
+.page__content li,
+.page__content h1,
+.page__content h2,
+.page__content h3,
+.page__content h4,
+.page__content h5,
+.page__content h6,
+.page__content td,
+.page__content th,
+.page__content blockquote,
+.page__content figcaption {
+  text-align: left !important;
 }
 
 .page__content p,
 .page__content ul,
 .page__content ol,
 .page__content dl,
-.page__content pre,
 .page__content blockquote,
-.page__content table,
-.page__content .highlighter-rouge,
-.page__content figure {
+.page__content table {
   margin-top: 0;
-  margin-bottom: 1.15em;
+  margin-bottom: 1.25em;
+}
+
+.page__content pre,
+.page__content div.highlighter-rouge,
+.page__content figure.highlight,
+.page__content .highlight {
+  margin-top: 1.25em !important;
+  margin-bottom: 1.75em !important;
+}
+
+.page__content img,
+.page__content figure img {
+  display: block;
+  margin: 1.25em 0 1.75em 0 !important;
+  max-width: 100%;
+  height: auto;
+}
+
+.page__content p + pre,
+.page__content p + div.highlighter-rouge,
+.page__content p + figure.highlight,
+.page__content p + img,
+.page__content p + figure,
+.page__content ul + pre,
+.page__content ol + pre,
+.page__content ul + div.highlighter-rouge,
+.page__content ol + div.highlighter-rouge {
+  margin-top: 1.25em !important;
 }
 
 .page__content li {
-  margin-bottom: 0.4em;
+  margin-bottom: 0.45em;
 }
 
 .page__content li > ul,
 .page__content li > ol {
-  margin-top: 0.4em;
-  margin-bottom: 0.4em;
+  margin-top: 0.45em;
+  margin-bottom: 0.45em;
 }
 
 .page__content h2,
 .page__content h3,
 .page__content h4 {
-  margin-top: 1.6em;
-  margin-bottom: 0.75em;
+  margin-top: 1.8em;
+  margin-bottom: 0.85em;
 }
 
 .page__content h2:first-child,
@@ -88,7 +125,7 @@
 }
 
 .page__content hr {
-  margin: 2em 0;
+  margin: 2.25em 0;
 }
 
 // --- Info table (key-value metadata on writeups) --------------------------
