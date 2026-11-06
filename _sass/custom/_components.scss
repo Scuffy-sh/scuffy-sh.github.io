@@ -44,6 +44,53 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+// --- Page content readability (writeups / articles) -----------------------
+// More breathing room and explicit left alignment so long-form content
+// (especially writeups) doesn't feel compacted or visually centered.
+.page__content {
+  text-align: left;
+}
+
+.page__content p,
+.page__content ul,
+.page__content ol,
+.page__content dl,
+.page__content pre,
+.page__content blockquote,
+.page__content table,
+.page__content .highlighter-rouge,
+.page__content figure {
+  margin-top: 0;
+  margin-bottom: 1.15em;
+}
+
+.page__content li {
+  margin-bottom: 0.4em;
+}
+
+.page__content li > ul,
+.page__content li > ol {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.page__content h2,
+.page__content h3,
+.page__content h4 {
+  margin-top: 1.6em;
+  margin-bottom: 0.75em;
+}
+
+.page__content h2:first-child,
+.page__content h3:first-child,
+.page__content h4:first-child {
+  margin-top: 0;
+}
+
+.page__content hr {
+  margin: 2em 0;
+}
+
 // --- Info table (key-value metadata on writeups) --------------------------
 // `.info-table` is SITE-OWNED (kramdown IAL on 14 writeups; upstream ships
 // no such selector). thead stays hidden: the header row is structural.
