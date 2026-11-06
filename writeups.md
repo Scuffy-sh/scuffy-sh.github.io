@@ -18,7 +18,7 @@ permalink: /writeups/
     <option value="difícil">Difícil</option>
   </select>
   <select id="os-filter" class="filter-select">
-    <option value="">Sistema</option>
+    <option value="">Sistema Operativo</option>
     <option value="linux">Linux</option>
     <option value="windows">Windows</option>
   </select>
