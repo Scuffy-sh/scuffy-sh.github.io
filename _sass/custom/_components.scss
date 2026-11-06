@@ -12,35 +12,33 @@
 // ==========================================================================
 
 // --- Headings -------------------------------------------------------------
-// Upstream compiles no `color` on h1-h6 (only margin/size/weight) and none
-// forced, so the accent rule wins by source order at (0,1,1). The h2
-// hairline already ships upstream; extend the same treatment to h3/h4.
-.page__content h1,
-.page__content h2,
-.page__content h3,
-.page__content h4 {
-  color: var(--color-accent);
-}
-
+// Clear size hierarchy + gradual color (h1 strongest accent -> h4 softer)
+// so heading levels are easy to distinguish at a glance.
 .page__content h1 {
-  font-size: clamp(1.3rem, 2.4vw, 1.8rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
+  color: var(--color-accent);
+  line-height: 1.2;
 }
 
 .page__content h2 {
-  font-size: clamp(1.05rem, 1.9vw, 1.4rem);
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  color: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
+  line-height: 1.25;
 }
 
 .page__content h3 {
-  font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+  font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  color: color-mix(in srgb, var(--color-accent) 62%, var(--color-text));
+  line-height: 1.3;
+  padding-bottom: 0.45em;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .page__content h4 {
-  font-size: clamp(0.88rem, 1.3vw, 1.05rem);
-}
-
-.page__content h3,
-.page__content h4 {
-  padding-bottom: 0.5em;
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  color: color-mix(in srgb, var(--color-accent) 45%, var(--color-text-muted));
+  line-height: 1.35;
+  padding-bottom: 0.4em;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -70,6 +68,7 @@
 .page__title {
   text-align: left !important;
   margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .page__content p,
@@ -79,21 +78,21 @@
 .page__content blockquote,
 .page__content table {
   margin-top: 0;
-  margin-bottom: 1.25em;
+  margin-bottom: 1.5em;
 }
 
 .page__content pre,
 .page__content div.highlighter-rouge,
 .page__content figure.highlight,
 .page__content .highlight {
-  margin-top: 1.25em !important;
-  margin-bottom: 1.75em !important;
+  margin-top: 1.75em !important;
+  margin-bottom: 2.25em !important;
 }
 
 .page__content img,
 .page__content figure img {
   display: block;
-  margin: 1.25em 0 1.75em 0 !important;
+  margin: 1.75em 0 2.25em 0 !important;
   max-width: 100%;
   height: auto;
 }
@@ -106,8 +105,14 @@
 .page__content ul + pre,
 .page__content ol + pre,
 .page__content ul + div.highlighter-rouge,
-.page__content ol + div.highlighter-rouge {
-  margin-top: 1.25em !important;
+.page__content ol + div.highlighter-rouge,
+.page__content h2 + pre,
+.page__content h2 + div.highlighter-rouge,
+.page__content h3 + pre,
+.page__content h3 + div.highlighter-rouge,
+.page__content h4 + pre,
+.page__content h4 + div.highlighter-rouge {
+  margin-top: 1.75em !important;
 }
 
 .page__content li {
