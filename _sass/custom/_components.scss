@@ -48,6 +48,7 @@
 // More breathing room and explicit left alignment so long-form content
 // (especially writeups) doesn't feel compacted or visually centered.
 .page__content,
+.page__content > *,
 .page__content p,
 .page__content li,
 .page__content h1,
@@ -59,8 +60,16 @@
 .page__content td,
 .page__content th,
 .page__content blockquote,
-.page__content figcaption {
+.page__content figcaption,
+.layout--single .page__content,
+.layout--single .page__content p,
+.layout--single .page__content li,
+.layout--single .page__content h2,
+.layout--single .page__content h3,
+.layout--single .page__content h4,
+.page__title {
   text-align: left !important;
+  margin-left: 0 !important;
 }
 
 .page__content p,
