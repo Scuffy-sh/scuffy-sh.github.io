@@ -89,10 +89,22 @@
   margin-bottom: 2.25em !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  max-width: 70ch;
-  width: 100%;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: 100%;
   box-sizing: border-box;
   overflow-x: auto;
+}
+
+.page__content div.highlighter-rouge > pre,
+.page__content figure.highlight > pre,
+.page__content .highlight > pre,
+.page__content pre.highlight {
+  width: -moz-fit-content;
+  width: fit-content;
+  min-width: min-content;
+  max-width: 100%;
+  margin: 0 !important;
 }
 
 .page__content img,
